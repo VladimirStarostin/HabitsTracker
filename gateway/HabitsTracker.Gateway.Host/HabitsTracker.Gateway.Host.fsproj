@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\services\HabitsService\HabitsService.Protos\HabitsService.Protos.csproj" />
+    <ProjectReference Include="..\..\services\TrackingService\TrackingService.Protos\TrackingService.Protos.csproj" />
+    <ProjectReference Include="..\..\services\UserService\UserService.Protos\UserService.Protos.csproj" />
+  </ItemGroup>
+
+</Project>

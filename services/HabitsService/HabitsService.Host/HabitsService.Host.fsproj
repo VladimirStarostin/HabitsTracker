@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+	<IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HabitsService.Protos\HabitsService.Protos.csproj" />
+    <ProjectReference Include="..\HabitsService.Migrations\HabitsService.Migrations.fsproj" />
+    <ProjectReference Include="..\..\..\Helpers\Helpers.fsproj" />
+  </ItemGroup>
+
+</Project>
