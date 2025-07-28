@@ -1,6 +1,7 @@
 open System
 open Microsoft.AspNetCore.Builder
 open Microsoft.Extensions.Hosting
+open HabitsService.V1
 
 [<EntryPoint>]
 let main args =
@@ -12,4 +13,3 @@ let main args =
     app.Run()
 
     0 // Exit code
-
