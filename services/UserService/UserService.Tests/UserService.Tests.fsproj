@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="UnitTest1.fs" />
+    <Compile Include="Users.fs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -17,4 +17,9 @@
     <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
   </ItemGroup>
 
+  <ItemGroup>
+	<ProjectReference Include="..\..\..\Helpers\Helpers.fsproj" />
+	<ProjectReference Include="..\UserService.Host\UserService.Host.fsproj" />
+  </ItemGroup>
+	
 </Project>
