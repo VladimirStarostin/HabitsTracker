@@ -1,3 +1,46 @@
 syntax = "proto3";
 
-option csharp_namespace = "MyApp.Namespace";
+package tracking_service.v1;
+
+service TrackingService {
+  rpc GetAllEvents (GetAllEventsRequest) returns (GetAllEventsResponse);
+  rpc TrackHabit (TrackHabitRequest) returns (TrackHabitResponse);
+  rpc DeleteEvent (DeleteEventRequest) returns (DeleteEventResponse);
+  rpc GetByIds (GetByIdsRequest) returns (GetByIdsResponse);
+}
+
+message GetAllEventsRequest {}
+
+message GetAllEventsResponse {
+  repeated HabitEvent events = 1;
+}
+
+message TrackHabitRequest {
+  int32 habit_id = 1;
+  string date = 2; // ISO-8601 format
+}
+
+message TrackHabitResponse {
+  HabitEvent event = 1;
+}
+
+message DeleteEventRequest {
+  int32 event_id = 1;
+}
+
+message DeleteEventResponse {}
+
+message HabitEvent {
+  int32 id = 1;
+  int32 habit_id = 2;
+  int32 user_id = 3;
+  string date = 4; // ISO-8601 format
+}
+
+message GetByIdsRequest {
+	repeated int32 event_ids = 1;
+}
+
+message GetByIdsResponse {
+	repeated HabitEvent events = 1;
+}

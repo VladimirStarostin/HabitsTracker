@@ -1,3 +1,43 @@
 syntax = "proto3";
 
-option csharp_namespace = "MyApp.Namespace";
+package habits_service.v1;
+
+service HabitsService {
+  rpc GetAll (GetAllRequest) returns (GetAllResponse);
+  rpc Add (AddHabitRequest) returns (AddHabitResponse);
+  rpc Delete (DeleteHabitRequest) returns (DeleteHabitResponse);
+  rpc GetByIds (GetByIdsRequest) returns (GetByIdsResponse);
+}
+
+message GetAllRequest {}
+
+message GetAllResponse {
+  repeated Habit habits = 1;
+}
+
+message AddHabitRequest {
+  string name = 1;
+}
+
+message AddHabitResponse {
+  Habit habit = 1;
+}
+
+message DeleteHabitRequest {
+  int32 id = 1;
+}
+
+message DeleteHabitResponse {}
+
+message Habit {
+  int32 id = 1;
+  string name = 2;
+}
+
+message GetByIdsRequest {
+	repeated int32 habitIds = 1;
+}
+
+message GetByIdsResponse {
+	repeated Habit habits = 1;
+}
