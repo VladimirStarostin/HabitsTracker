@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+	<NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
+	<NoWarn>FS0988</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="StatusEndpoint.fs" />
+    <Compile Include="MigrationsRunner.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentMigrator.Runner" Version="3.3.2" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.0" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,26 @@
+﻿namespace HabitsTracker.Helpers
+
+open System.Reflection
+open Microsoft.Extensions.DependencyInjection
+
+open FluentMigrator.Runner
+
+module MigrationRunner =
+
+    let runMigrations (connectionString: string) (migrationAssembly: Assembly) =
+        let serviceProvider =
+            ServiceCollection()
+                .AddFluentMigratorCore()
+                .ConfigureRunner(fun builder ->
+                    builder
+                        .AddSQLite()
+                        .WithGlobalConnectionString(connectionString)
+                        .ScanIn(migrationAssembly)
+                        .For.Migrations()
+                    |> ignore)
+                .AddLogging(fun lb -> lb.AddFluentMigratorConsole() |> ignore)
+                .BuildServiceProvider()
+
+        use scope = serviceProvider.CreateScope()
+        let runner = scope.ServiceProvider.GetRequiredService<IMigrationRunner>()
+        runner.MigrateUp()
