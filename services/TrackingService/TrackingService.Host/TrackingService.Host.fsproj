@@ -6,13 +6,22 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="DataAccess\HabitEvents.fs" />
     <Compile Include="Program.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Dapper.FSharp" Version="4.9.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\TrackingService.Protos\TrackingService.Protos.csproj" />
     <ProjectReference Include="..\TrackingService.Migrations\TrackingService.Migrations.fsproj" />
     <ProjectReference Include="..\..\..\Helpers\Helpers.fsproj" />
+  </ItemGroup>
+	
+  <ItemGroup>
+    <InternalsVisibleTo Include="$(AssemblyName).Tests" />
   </ItemGroup>
 
 </Project>
