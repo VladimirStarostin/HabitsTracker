@@ -2,14 +2,17 @@ open System
 open Microsoft.AspNetCore.Builder
 open Microsoft.Extensions.Hosting
 
+open HabitsTracker.Helpers
+
 [<EntryPoint>]
 let main args =
     let builder = WebApplication.CreateBuilder(args)
     let app = builder.Build()
+    do StatusEndpoint.add app |> ignore
 
-    app.MapGet("/", Func<string>(fun () -> "Hello World!")) |> ignore
+    MigrationRunner.runMigrations
+        "Data Source=tracking.db"
+        typeof<TrackingService.Migrations.CreateTablesMigration>.Assembly
 
     app.Run()
-
-    0 // Exit code
-
+    0
