@@ -14,7 +14,7 @@ type CreateTablesMigration() =
             .PrimaryKey()
             .Identity()
             .WithColumn("Name")
-            .AsString(200)
+            .AsString(512)
             .NotNullable()
         |> ignore
 
