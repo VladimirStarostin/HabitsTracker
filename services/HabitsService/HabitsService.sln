@@ -11,6 +11,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "HabitsService.Migrations", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HabitsService.Protos", "HabitsService.Protos\HabitsService.Protos.csproj", "{5E2075A7-32E4-C0B1-D38B-58BBC62F500A}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Helpers", "..\..\Helpers\Helpers.fsproj", "{733D23DE-5E37-E548-5EA3-60898308D58C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{5E2075A7-32E4-C0B1-D38B-58BBC62F500A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5E2075A7-32E4-C0B1-D38B-58BBC62F500A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5E2075A7-32E4-C0B1-D38B-58BBC62F500A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{733D23DE-5E37-E548-5EA3-60898308D58C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{733D23DE-5E37-E548-5EA3-60898308D58C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{733D23DE-5E37-E548-5EA3-60898308D58C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{733D23DE-5E37-E548-5EA3-60898308D58C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
