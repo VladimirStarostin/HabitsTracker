@@ -19,7 +19,7 @@ type TrackingServiceImpl(connectionString: string) =
 
             for e in events do
                 response.Events.Add(
-                    HabitEvent(Id = e.Id, HabitId = e.HabitId, UserId = e.UserId, Date = e.Date.ToString("ISO-8601"))
+                    HabitEvent(Id = e.Id, HabitId = e.HabitId, UserId = e.UserId, Date = e.Date)
                 )
 
             return response
@@ -35,7 +35,7 @@ type TrackingServiceImpl(connectionString: string) =
 
             for e in events do
                 response.Events.Add(
-                    HabitEvent(Id = e.Id, HabitId = e.HabitId, UserId = e.UserId, Date = e.Date.ToString("ISO-8601"))
+                    HabitEvent(Id = e.Id, HabitId = e.HabitId, UserId = e.UserId, Date = e.Date)
                 )
 
             return response
@@ -46,7 +46,7 @@ type TrackingServiceImpl(connectionString: string) =
             let! id =
                 insertSingleAsync
                     { HabitId = request.HabitId
-                      Date = request.Date |> DateTimeOffset.Parse
+                      Date = request.Date
                       UserId = HeadersParser.getUserId context.RequestHeaders }
                 |> SQLite.executeWithConnection connectionString
 
@@ -63,7 +63,7 @@ type TrackingServiceImpl(connectionString: string) =
                             Id = habitEvent.Id,
                             HabitId = habitEvent.HabitId,
                             UserId = habitEvent.UserId,
-                            Date = habitEvent.Date.ToString("ISO-8601")
+                            Date = habitEvent.Date
                         )
                 )
         }

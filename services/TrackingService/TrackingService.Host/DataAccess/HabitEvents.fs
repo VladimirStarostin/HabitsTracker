@@ -7,15 +7,15 @@ open Dapper
 open Dapper.FSharp.SQLite
 
 type HabitEvent =
-    { Id: int
-      HabitId: int
-      UserId: int
-      Date: DateTimeOffset }
+    { Id: int64
+      HabitId: int64
+      UserId: int64
+      Date: string }
 
 type InsertDto =
-    { HabitId: int
-      UserId: int
-      Date: DateTimeOffset }
+    { HabitId: int64
+      UserId: int64
+      Date: string }
 
 let habitEvents = table'<HabitEvent> "HabitEvents"
 
@@ -26,7 +26,7 @@ let getAllAsync (conn: IDbConnection) =
     }
     |> conn.SelectAsync<HabitEvent>
 
-let getByIdsAsync (ids: int list) (conn: IDbConnection) =
+let getByIdsAsync (ids: int64 list) (conn: IDbConnection) =
     select {
         for h in habitEvents do
             where (isIn h.Id ids)
@@ -59,7 +59,7 @@ let deleteAllAsync (conn: IDbConnection) =
     }
     |> conn.DeleteAsync
 
-let deleteByIdAsync (id: int) (conn: IDbConnection) =
+let deleteByIdAsync (id: int64) (conn: IDbConnection) =
     delete {
         for h in habitEvents do
             where (h.Id = id)

@@ -35,7 +35,7 @@ let ``Select from empty Habits returns empty`` () =
         Assert.That(result, Is.Empty)
     }
 
-let date = DateTimeOffset.Parse "2025-07-28"
+let date = "2025-07-28"
 
 [<Test>]
 let ``getByIdsAsync - ids selectivity`` () =

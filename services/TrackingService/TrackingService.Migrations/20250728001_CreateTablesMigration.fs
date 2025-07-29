@@ -20,7 +20,7 @@ type CreateTablesMigration() =
             .AsInt32()
             .NotNullable()
             .WithColumn("Date")
-            .AsDate()
+            .AsDateTime()
             .NotNullable()
         |> ignore
 

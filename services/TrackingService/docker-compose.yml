@@ -1,0 +1,17 @@
+services:
+    habits-tracking-service:
+        build:
+            context: ../../
+            dockerfile: services/TrackingService/TrackingService.Host/Dockerfile
+        ports:
+            - "5005:5005"
+            - "5006:5006"
+        restart: always
+        env_file: .env
+        environment:
+          - ASPNETCORE_ENVIRONMENT
+          - ConnectionStrings__TrackingDb=${TRACKING_DB_CONNECTION_STRING}
+        volumes:
+          - ./data:/data
+        user: ${USER_ID}:${GROUP_ID}
+        container_name: habits-tracking-service
