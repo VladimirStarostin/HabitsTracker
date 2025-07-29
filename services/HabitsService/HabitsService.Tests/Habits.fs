@@ -6,7 +6,7 @@ open NUnit.Framework
 
 open Dapper.FSharp.SQLite
 
-open HabitsTracker.Helpers.MigrationRunner
+open HabitsTracker.Helpers
 
 open HabitsService.Host.DataAccess.Habits
 open HabitsService.Migrations
@@ -16,7 +16,7 @@ let connectionString = "Data Source=file:memdb1?mode=memory&cache=shared"
 [<OneTimeSetUp>]
 let Setup () =
     do OptionTypes.register ()
-    do runMigrations connectionString (typeof<CreateTablesMigration>.Assembly)
+    do MigrationRunner.runMigrations connectionString (typeof<CreateTablesMigration>.Assembly)
 
 [<SetUp>]
 let clearDbAsync () =
@@ -107,7 +107,9 @@ let ``getAllAsync - insert two then select all`` () =
         let! id1 = insertSingleAsync { Name = "Read books" } conn
         let! id2 = insertSingleAsync { Name = "Exercise" } conn
 
-        let expected = [ { Id = id1; Name = "Read books" }; { Id = id2; Name = "Exercise" } ]
+        let expected =
+            [ { Id = id1; Name = "Read books" }; { Id = id2; Name = "Exercise" } ]
+
         let! actual = getAllAsync conn
         Assert.That(actual, Is.EquivalentTo expected)
     }
