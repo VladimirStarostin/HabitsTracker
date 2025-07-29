@@ -16,8 +16,8 @@ message GetAllEventsResponse {
 }
 
 message TrackHabitRequest {
-  int32 habit_id = 1;
-  string date = 2; // ISO-8601 format
+  int64 habit_id = 1;
+  string date = 2; //ISO-8601
 }
 
 message TrackHabitResponse {
@@ -31,16 +31,16 @@ message DeleteEventRequest {
 message DeleteEventResponse {}
 
 message HabitEvent {
-  int32 id = 1;
-  int32 habit_id = 2;
-  int32 user_id = 3;
-  string date = 4; // ISO-8601 format
+  int64 id = 1;
+  int64 habit_id = 2;
+  int64 user_id = 3;
+  string date = 4; //ISO-8601
 }
 
 message GetByIdsRequest {
-	repeated int32 event_ids = 1;
+  repeated int64 event_ids = 1;
 }
 
 message GetByIdsResponse {
-	repeated HabitEvent events = 1;
+   repeated HabitEvent events = 1;
 }
