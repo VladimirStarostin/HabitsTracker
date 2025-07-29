@@ -47,16 +47,27 @@ let ``getByIdsAsync - ids selectivity`` () =
         let! id3 = insertSingleAsync { Email = "c@test.com"; Name = "Ceca" } conn
 
         let expectedInTable: User list =
-            [ { Id = id1; Email = "a@test.com"; Name = "Alice" }
-              { Id = id2; Email = "b@test.com"; Name = "Bob" }
-              { Id = id3; Email = "c@test.com"; Name = "Ceca" }  ]
+            [ { Id = id1
+                Email = "a@test.com"
+                Name = "Alice" }
+              { Id = id2
+                Email = "b@test.com"
+                Name = "Bob" }
+              { Id = id3
+                Email = "c@test.com"
+                Name = "Ceca" } ]
 
         let! actualInTable = getAllAsync conn
         Assert.That(actualInTable, Is.EquivalentTo expectedInTable)
 
         let expected: User list =
-            [ { Id = id2; Email = "b@test.com"; Name = "Bob" }
-              { Id = id3; Email = "c@test.com"; Name = "Ceca" } ]
+            [ { Id = id2
+                Email = "b@test.com"
+                Name = "Bob" }
+              { Id = id3
+                Email = "c@test.com"
+                Name = "Ceca" } ]
+
         let! actual = getByIdsAsync [ id2; id3 ] conn
         Assert.That(actual, Is.EquivalentTo expected)
     }
@@ -71,9 +82,15 @@ let ``getByIdsAsync - empty ids - no rows returned`` () =
         let! id3 = insertSingleAsync { Email = "c@test.com"; Name = "Ceca" } conn
 
         let expectedInTable: User list =
-            [ { Id = id1; Email = "a@test.com"; Name = "Alice" }
-              { Id = id2; Email = "b@test.com"; Name = "Bob" }
-              { Id = id3; Email = "c@test.com"; Name = "Ceca" }  ]
+            [ { Id = id1
+                Email = "a@test.com"
+                Name = "Alice" }
+              { Id = id2
+                Email = "b@test.com"
+                Name = "Bob" }
+              { Id = id3
+                Email = "c@test.com"
+                Name = "Ceca" } ]
 
         let! actualInTable = getAllAsync conn
         Assert.That(actualInTable, Is.EquivalentTo expectedInTable)
@@ -92,9 +109,15 @@ let ``getByIdsAsync - unexistent id - no rows returned`` () =
         let! id3 = insertSingleAsync { Email = "c@test.com"; Name = "Ceca" } conn
 
         let expectedInTable: User list =
-            [ { Id = id1; Email = "a@test.com"; Name = "Alice" }
-              { Id = id2; Email = "b@test.com"; Name = "Bob" }
-              { Id = id3; Email = "c@test.com"; Name = "Ceca" }  ]
+            [ { Id = id1
+                Email = "a@test.com"
+                Name = "Alice" }
+              { Id = id2
+                Email = "b@test.com"
+                Name = "Bob" }
+              { Id = id3
+                Email = "c@test.com"
+                Name = "Ceca" } ]
 
         let! actualInTable = getAllAsync conn
         Assert.That(actualInTable, Is.EquivalentTo expectedInTable)
@@ -112,8 +135,13 @@ let ``getAllAsync - insert two then select all`` () =
         let! id2 = insertSingleAsync { Email = "b@test.com"; Name = "Bob" } conn
 
         let expected: User list =
-            [ { Id = id1; Email = "a@test.com"; Name = "Alice" }
-              { Id = id2; Email = "b@test.com"; Name = "Bob" } ]
+            [ { Id = id1
+                Email = "a@test.com"
+                Name = "Alice" }
+              { Id = id2
+                Email = "b@test.com"
+                Name = "Bob" } ]
+
         let! actual = getAllAsync conn
         Assert.That(actual, Is.EquivalentTo expected)
     }
@@ -129,7 +157,12 @@ let ``deleteByIdAsync - id selectivity`` () =
         let! numRowsAffected = deleteByIdAsync id1 conn
         Assert.That(numRowsAffected, Is.EqualTo 1)
 
-        let expected = List.singleton { Id = id2; Email = "b@test.com"; Name = "Bob" }
+        let expected =
+            List.singleton
+                { Id = id2
+                  Email = "b@test.com"
+                  Name = "Bob" }
+
         let! actual = getAllAsync conn
         Assert.That(actual, Is.EquivalentTo expected)
     }

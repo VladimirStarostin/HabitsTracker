@@ -42,19 +42,37 @@ let ``getByIdsAsync - ids selectivity`` () =
     task {
         use conn = new SqliteConnection(connectionString)
         do conn.Open()
-        let! id1 = insertSingleAsync { HabitId = 1; Date = date } conn
-        let! id2 = insertSingleAsync { HabitId = 2; Date = date } conn
-        let! id3 = insertSingleAsync { HabitId = 3; Date = date } conn
+        let! id1 = insertSingleAsync { HabitId = 1; Date = date; UserId = 1 } conn
+        let! id2 = insertSingleAsync { HabitId = 2; Date = date; UserId = 2 } conn
+        let! id3 = insertSingleAsync { HabitId = 3; Date = date; UserId = 3 } conn
 
         let expectedInTable: HabitEvent list =
-            [ { Id = id1; HabitId = 1; Date = date }
-              { Id = id2; HabitId = 2; Date = date }
-              { Id = id3; HabitId = 3; Date = date } ]
+            [ { Id = id1
+                HabitId = 1
+                Date = date
+                UserId = 1 }
+              { Id = id2
+                HabitId = 2
+                Date = date
+                UserId = 2 }
+              { Id = id3
+                HabitId = 3
+                Date = date
+                UserId = 3 } ]
 
         let! actualInTable = getAllAsync conn
         Assert.That(actualInTable, Is.EquivalentTo expectedInTable)
 
-        let expected: HabitEvent list = [ { Id = id2; HabitId = 2; Date = date }; { Id = id3; HabitId = 3; Date = date } ]
+        let expected: HabitEvent list =
+            [ { Id = id2
+                HabitId = 2
+                Date = date
+                UserId = 2 }
+              { Id = id3
+                HabitId = 3
+                Date = date
+                UserId = 3 } ]
+
         let! actual = getByIdsAsync [ id2; id3 ] conn
         Assert.That(actual, Is.EquivalentTo expected)
     }
@@ -64,14 +82,23 @@ let ``getByIdsAsync - empty ids - no rows returned`` () =
     task {
         use conn = new SqliteConnection(connectionString)
         do conn.Open()
-        let! id1 = insertSingleAsync { HabitId = 1; Date = date } conn
-        let! id2 = insertSingleAsync { HabitId = 2; Date = date } conn
-        let! id3 = insertSingleAsync { HabitId = 3; Date = date } conn
+        let! id1 = insertSingleAsync { HabitId = 1; Date = date; UserId = 1 } conn
+        let! id2 = insertSingleAsync { HabitId = 2; Date = date; UserId = 2 } conn
+        let! id3 = insertSingleAsync { HabitId = 3; Date = date; UserId = 3 } conn
 
         let expectedInTable: HabitEvent list =
-            [ { Id = id1; HabitId = 1; Date = date }
-              { Id = id2; HabitId = 2; Date = date }
-              { Id = id3; HabitId = 3; Date = date } ]
+            [ { Id = id1
+                HabitId = 1
+                Date = date
+                UserId = 1 }
+              { Id = id2
+                HabitId = 2
+                Date = date
+                UserId = 2 }
+              { Id = id3
+                HabitId = 3
+                Date = date
+                UserId = 3 } ]
 
         let! actualInTable = getAllAsync conn
         Assert.That(actualInTable, Is.EquivalentTo expectedInTable)
@@ -85,14 +112,23 @@ let ``getByIdsAsync - unexistent id - no rows returned`` () =
     task {
         use conn = new SqliteConnection(connectionString)
         do conn.Open()
-        let! id1 = insertSingleAsync { HabitId = 1; Date = date } conn
-        let! id2 = insertSingleAsync { HabitId = 2; Date = date } conn
-        let! id3 = insertSingleAsync { HabitId = 3; Date = date } conn
+        let! id1 = insertSingleAsync { HabitId = 1; Date = date; UserId = 1 } conn
+        let! id2 = insertSingleAsync { HabitId = 2; Date = date; UserId = 2 } conn
+        let! id3 = insertSingleAsync { HabitId = 3; Date = date; UserId = 3 } conn
 
         let expectedInTable: HabitEvent list =
-            [ { Id = id1; HabitId = 1; Date = date }
-              { Id = id2; HabitId = 2; Date = date }
-              { Id = id3; HabitId = 3; Date = date } ]
+            [ { Id = id1
+                HabitId = 1
+                Date = date
+                UserId = 1 }
+              { Id = id2
+                HabitId = 2
+                Date = date
+                UserId = 2 }
+              { Id = id3
+                HabitId = 3
+                Date = date
+                UserId = 3 } ]
 
         let! actualInTable = getAllAsync conn
         Assert.That(actualInTable, Is.EquivalentTo expectedInTable)
@@ -106,10 +142,19 @@ let ``getAllAsync - insert two then select all`` () =
     task {
         use conn = new SqliteConnection(connectionString)
         do conn.Open()
-        let! id1 = insertSingleAsync { HabitId = 1; Date = date } conn
-        let! id2 = insertSingleAsync { HabitId = 2; Date = date } conn
+        let! id1 = insertSingleAsync { HabitId = 1; Date = date; UserId = 1 } conn
+        let! id2 = insertSingleAsync { HabitId = 2; Date = date; UserId = 2 } conn
 
-        let expected: HabitEvent list = [ { Id = id1; HabitId = 1; Date = date }; { Id = id2; HabitId = 2; Date = date } ]
+        let expected: HabitEvent list =
+            [ { Id = id1
+                HabitId = 1
+                Date = date
+                UserId = 1 }
+              { Id = id2
+                HabitId = 2
+                Date = date
+                UserId = 2 } ]
+
         let! actual = getAllAsync conn
         Assert.That(actual, Is.EquivalentTo expected)
     }
@@ -119,13 +164,19 @@ let ``deleteByIdAsync - id selectivity`` () =
     task {
         use conn = new SqliteConnection(connectionString)
         do conn.Open()
-        let! id1 = insertSingleAsync { HabitId = 1; Date = date } conn
-        let! id2 = insertSingleAsync { HabitId = 2; Date = date } conn
+        let! id1 = insertSingleAsync { HabitId = 1; Date = date; UserId = 1 } conn
+        let! id2 = insertSingleAsync { HabitId = 2; Date = date; UserId = 2 } conn
 
         let! numRowsAffected = deleteByIdAsync id1 conn
         Assert.That(numRowsAffected, Is.EqualTo 1)
 
-        let expected = List.singleton { Id = id2; HabitId = 2; Date = date }
+        let expected =
+            List.singleton
+                { Id = id2
+                  HabitId = 2
+                  Date = date
+                  UserId = 2 }
+
         let! actual = getAllAsync conn
-        Assert.That(actual, Is.EquivalentTo expected)
+        Assert.That(actual, Is.EqualTo expected)
     }
