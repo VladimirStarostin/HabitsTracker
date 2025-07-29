@@ -1,4 +1,5 @@
-﻿module HabitsTracker.Helpers.StatusEndpoint
+﻿[<RequireQualifiedAccessAttribute>]
+module HabitsTracker.Helpers.StatusEndpoint
 
 open System
 open System.Reflection
