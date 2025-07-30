@@ -28,7 +28,7 @@ type UserServiceImpl(connectionString: string) =
             let userId =
                 context.RequestHeaders
                 |> HeadersParser.getUserId
-                |> List.singleton
+                |> (int64 >> List.singleton)
 
             let! currentUser =
                 getByIdsAsync userId
