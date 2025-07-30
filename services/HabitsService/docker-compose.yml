@@ -1,0 +1,17 @@
+services:
+    habits-service:
+        build:
+            context: ../../
+            dockerfile: services/HabitsService/HabitsService.Host/Dockerfile
+        ports:
+            - "5000:5000"
+            - "5001:5001"
+        restart: always
+        env_file: .env
+        environment:
+          - ASPNETCORE_ENVIRONMENT
+          - ConnectionStrings__HabitsDb=${HABITS_DB_CONNECTION_STRING}
+        volumes:
+          - ./data:/data
+        user: ${USER_ID}:${GROUP_ID}
+        container_name: habits-service

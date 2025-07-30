@@ -24,18 +24,18 @@ message AddHabitResponse {
 }
 
 message DeleteHabitRequest {
-  int32 id = 1;
+  int64 id = 1;
 }
 
 message DeleteHabitResponse {}
 
 message Habit {
-  int32 id = 1;
+  int64 id = 1;
   string name = 2;
 }
 
 message GetByIdsRequest {
-	repeated int32 habitIds = 1;
+	repeated int64 habitIds = 1;
 }
 
 message GetByIdsResponse {
