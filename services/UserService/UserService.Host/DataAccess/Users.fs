@@ -6,7 +6,7 @@ open Dapper
 open Dapper.FSharp.SQLite
 
 type User =
-    { Id: int; Email: string; Name: string }
+    { Id: int64; Email: string; Name: string }
 
 type InsertDto = { Email: string; Name: string }
 
@@ -19,7 +19,7 @@ let getAllAsync (conn: IDbConnection) =
     }
     |> conn.SelectAsync<User>
 
-let getByIdsAsync (ids: int list) (conn: IDbConnection) =
+let getByIdsAsync (ids: int64 list) (conn: IDbConnection) =
     select {
         for h in users do
             where (isIn h.Id ids)
@@ -42,7 +42,7 @@ let insertSingleAsync (insertDto: InsertDto) (conn: IDbConnection) =
 
         tx.Commit()
 
-        return int id
+        return int64 id
     }
 
 let deleteAllAsync (conn: IDbConnection) =
@@ -52,7 +52,7 @@ let deleteAllAsync (conn: IDbConnection) =
     }
     |> conn.DeleteAsync
 
-let deleteByIdAsync (id: int) (conn: IDbConnection) =
+let deleteByIdAsync (id: int64) (conn: IDbConnection) =
     delete {
         for h in users do
             where (h.Id = id)

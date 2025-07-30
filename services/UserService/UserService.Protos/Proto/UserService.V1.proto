@@ -24,13 +24,13 @@ message RegisterResponse {
 }
 
 message DeleteAccountRequest {
-  int32 user_id = 1;
+  int64 user_id = 1;
 }
 
 message DeleteAccountResponse {}
 
 message User {
-  int32 id = 1;
+  int64 id = 1;
   string email = 2;
   string name = 3;
 }
