@@ -4,7 +4,7 @@ open FluentMigrator
 
 [<Migration(20250727001L)>]
 type CreateTablesMigration() =
-    inherit Migration()
+    inherit AutoReversingMigration()
 
     override _.Up() =
         base.Create
@@ -17,5 +17,3 @@ type CreateTablesMigration() =
             .AsString(512)
             .NotNullable()
         |> ignore
-
-    override _.Down() = base.Delete.Table("Habits") |> ignore

@@ -6,7 +6,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="DataAccess\RefreshTokens.fs" />
     <Compile Include="DataAccess\Users.fs" />
+    <Compile Include="Domain\Authentification.fs" />
     <Compile Include="UserServiceRPC.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
@@ -14,6 +16,7 @@
   <ItemGroup>
     <PackageReference Include="Dapper.FSharp" Version="4.9.0" />
     <PackageReference Include="Grpc.AspNetCore.Server" Version="2.71.0" />
+	<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.13.0" />
   </ItemGroup>
 
   <ItemGroup>

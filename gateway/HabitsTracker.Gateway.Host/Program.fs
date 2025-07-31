@@ -1,15 +1,24 @@
-open System
 open Microsoft.AspNetCore.Builder
+open Microsoft.Extensions.Configuration
+open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
-open HabitsService.V1
 
 [<EntryPoint>]
 let main args =
-    let builder = WebApplication.CreateBuilder(args)
-    let app = builder.Build()
 
-    app.MapGet("/", Func<string>(fun () -> "Hello World!")) |> ignore
+    let builder = WebApplication.CreateBuilder (args)
+    builder.Services.AddControllers () |> ignore
 
-    app.Run()
+    let app = builder.Build ()
 
-    0 // Exit code
+    if app.Environment.IsDevelopment () then
+        app.UseDeveloperExceptionPage () |> ignore
+
+    app.UseRouting () |> ignore
+
+    app.UseEndpoints (fun endpoints -> endpoints.MapControllers () |> ignore)
+    |> ignore
+
+    app.Run ()
+
+    0

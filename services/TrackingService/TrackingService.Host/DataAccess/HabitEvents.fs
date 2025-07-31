@@ -26,6 +26,14 @@ let getAllAsync (conn: IDbConnection) =
     }
     |> conn.SelectAsync<HabitEvent>
 
+let getByHabitIdsAsync (habitIds: int64 list) (conn: IDbConnection) =
+    select {
+        for h in habitEvents do
+            where (isIn h.HabitId habitIds)
+            selectAll
+    }
+    |> conn.SelectAsync<HabitEvent>
+
 let getByIdsAsync (ids: int64 list) (conn: IDbConnection) =
     select {
         for h in habitEvents do
@@ -36,18 +44,18 @@ let getByIdsAsync (ids: int64 list) (conn: IDbConnection) =
 
 let insertSingleAsync (insertDto: InsertDto) (conn: IDbConnection) =
     task {
-        use tx = conn.BeginTransaction()
+        use tx = conn.BeginTransaction ()
 
         let! _ =
             insert {
                 into (table'<InsertDto> "HabitEvents")
                 value insertDto
             }
-            |> fun q -> conn.InsertAsync(q, tx)
+            |> fun q -> conn.InsertAsync (q, tx)
 
-        let! id = conn.ExecuteScalarAsync<int>("SELECT last_insert_rowid()", transaction = tx)
+        let! id = conn.ExecuteScalarAsync<int> ("SELECT last_insert_rowid()", transaction = tx)
 
-        tx.Commit()
+        tx.Commit ()
 
         return int id
     }

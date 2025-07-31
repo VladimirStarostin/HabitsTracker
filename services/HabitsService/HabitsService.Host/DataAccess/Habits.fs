@@ -5,9 +5,12 @@ open System.Data
 open Dapper
 open Dapper.FSharp.SQLite
 
-type Habit = { Id: int64; Name: string }
+type Habit =
+    { Id: int64
+      Name: string }
 
-type InsertDto = { Name: string }
+type InsertDto =
+    { Name: string }
 
 let habits = table'<Habit> "Habits"
 
@@ -28,18 +31,18 @@ let getByIdsAsync (ids: int64 list) (conn: IDbConnection) =
 
 let insertSingleAsync (insertDto: InsertDto) (conn: IDbConnection) =
     task {
-        use tx = conn.BeginTransaction()
+        use tx = conn.BeginTransaction ()
 
         let! _ =
             insert {
                 into (table'<InsertDto> "Habits")
                 value insertDto
             }
-            |> fun q -> conn.InsertAsync(q, tx)
+            |> fun q -> conn.InsertAsync (q, tx)
 
-        let! id = conn.ExecuteScalarAsync<int>("SELECT last_insert_rowid()", transaction = tx)
+        let! id = conn.ExecuteScalarAsync<int> ("SELECT last_insert_rowid()", transaction = tx)
 
-        tx.Commit()
+        tx.Commit ()
 
         return int id
     }

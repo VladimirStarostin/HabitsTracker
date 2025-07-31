@@ -9,39 +9,40 @@ open TrackingService.V1
 
 open TrackingService.Host.DataAccess.HabitEvents
 
-type TrackingServiceImpl(connectionString: string) =
-    inherit TrackingService.TrackingServiceBase()
+type TrackingServiceImpl (connectionString: string) =
+    inherit TrackingService.TrackingServiceBase ()
 
-    override _.GetAllEvents(_, _) =
-        task {
-            let! events = getAllAsync |> SQLite.executeWithConnection connectionString
-            let response = GetAllEventsResponse()
-
-            for e in events do
-                response.Events.Add(
-                    HabitEvent(Id = e.Id, HabitId = e.HabitId, UserId = e.UserId, Date = e.Date)
-                )
-
-            return response
-        }
-
-    override _.GetByIds(request: GetByIdsRequest, _) =
+    override _.GetEventsByHabitIds
+        (request: GetEventsByHabitIdsRequest, _)
+        : Threading.Tasks.Task<GetEventsByHabitIdsResponse> =
         task {
             let! events =
-                getByIdsAsync (request.EventIds |> Seq.toList)
+                getByHabitIdsAsync (request.HabitIds |> Seq.toList)
                 |> SQLite.executeWithConnection connectionString
 
-            let response = GetByIdsResponse()
+            let response = GetEventsByHabitIdsResponse ()
 
             for e in events do
-                response.Events.Add(
-                    HabitEvent(Id = e.Id, HabitId = e.HabitId, UserId = e.UserId, Date = e.Date)
-                )
+                response.Events.Add (HabitEvent (Id = e.Id, HabitId = e.HabitId, UserId = e.UserId, Date = e.Date))
 
             return response
         }
 
-    override _.TrackHabit(request: TrackHabitRequest, context: ServerCallContext) =
+    override _.GetEventsByIds (request: GetEventsByIdsRequest, _) : Threading.Tasks.Task<GetEventsByIdsResponse> =
+        task {
+            let! events =
+                getByIdsAsync (request.Ids |> Seq.toList)
+                |> SQLite.executeWithConnection connectionString
+
+            let response = GetEventsByIdsResponse ()
+
+            for e in events do
+                response.Events.Add (HabitEvent (Id = e.Id, HabitId = e.HabitId, UserId = e.UserId, Date = e.Date))
+
+            return response
+        }
+
+    override _.TrackHabit (request: TrackHabitRequest, context: ServerCallContext) =
         task {
             let! id =
                 insertSingleAsync
@@ -57,9 +58,9 @@ type TrackingServiceImpl(connectionString: string) =
             let habitEvent = result |> Seq.exactlyOne
 
             return
-                TrackHabitResponse(
+                TrackHabitResponse (
                     Event =
-                        HabitEvent(
+                        HabitEvent (
                             Id = habitEvent.Id,
                             HabitId = habitEvent.HabitId,
                             UserId = habitEvent.UserId,
@@ -68,11 +69,11 @@ type TrackingServiceImpl(connectionString: string) =
                 )
         }
 
-    override _.DeleteEvent(request: DeleteEventRequest, _) =
+    override _.DeleteEvent (request: DeleteEventRequest, _) =
         task {
-            let! _ =
-                deleteByIdAsync request.EventId
+            let! deletedRowsCount =
+                deleteByIdAsync request.Id
                 |> SQLite.executeWithConnection connectionString
 
-            return DeleteEventResponse()
+            return DeleteEventResponse (DeletedRowsCount = deletedRowsCount)
         }

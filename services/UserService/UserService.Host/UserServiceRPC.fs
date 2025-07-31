@@ -1,6 +1,7 @@
-﻿namespace UserService.Host.Grpc
+namespace UserService.Host.Grpc
 
 open System
+open System.Threading.Tasks
 
 open Grpc.Core
 
@@ -8,30 +9,27 @@ open HabitsTracker.Helpers
 open UserService.V1
 
 open UserService.Host.DataAccess.Users
+open UserService.Host.Domain.Services.Authentication
 
-type UserServiceImpl(connectionString: string) =
-    inherit UserService.UserServiceBase()
+type UserServiceImpl (connectionString: string, jwtSettings: JwtSettings) =
+    inherit UserService.UserServiceBase ()
 
-    override _.Register(request: RegisterRequest, _) : Threading.Tasks.Task<RegisterResponse> =
+    override _.Register (request: RegisterRequest, _) : Task<UserService.V1.AuthResponse> =
         task {
             let! registeredUserId =
                 insertSingleAsync
                     { Email = request.Email
-                      Name = request.Name }
+                      Name = request.Name
+                      Hash = Guid.NewGuid().ToString () }
                 |> SQLite.executeWithConnection connectionString
 
-            return RegisterResponse(User = User(Id = registeredUserId, Email = request.Email, Name = request.Name))
+            return AuthResponse (User = User (Id = registeredUserId, Email = request.Email, Name = request.Name))
         }
 
-    override _.GetCurrent(_, context: ServerCallContext) =
+    override _.GetCurrent (request: GetCurrentRequest, _) =
         task {
-            let userId =
-                context.RequestHeaders
-                |> HeadersParser.getUserId
-                |> (int64 >> List.singleton)
-
             let! currentUser =
-                getByIdsAsync userId
+                getByIdsAsync request.
                 |> SQLite.executeWithConnection connectionString
                 |> fun t ->
                     task {
@@ -40,14 +38,23 @@ type UserServiceImpl(connectionString: string) =
                     }
 
             return
-                GetCurrentResponse(User = User(Id = currentUser.Id, Email = currentUser.Email, Name = currentUser.Name))
+                GetCurrentResponse (
+                    User = User (Id = currentUser.Id, Email = currentUser.Email, Name = currentUser.Name)
+                )
         }
 
-    override _.DeleteAccount(_, context: ServerCallContext) =
+    override _.DeleteAccount (_, context: ServerCallContext) =
         task {
             let userId = context.RequestHeaders |> HeadersParser.getUserId
 
-            let! _ = deleteByIdAsync userId |> SQLite.executeWithConnection connectionString
+            let! _ =
+                deleteByIdAsync userId
+                |> SQLite.executeWithConnection connectionString
 
-            return DeleteAccountResponse()
+            return DeleteAccountResponse ()
+        }
+
+    override _.Refresh (request, _callContext) : Task<UserService.V1.AuthResponse> =
+        task {
+            validateAndRefresh request.RefreshToken connectionString jwtSettings |> 
         }

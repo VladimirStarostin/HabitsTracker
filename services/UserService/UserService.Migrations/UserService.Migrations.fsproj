@@ -6,7 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="20250727001_CreateTablesMigration.fs" />
+    <Compile Include="20250727001_CreateUsersTableMigration.fs" />
+    <Compile Include="20250730001_CreateRefreshTokensTableMigration.fs" />
   </ItemGroup>
 	
   <ItemGroup>

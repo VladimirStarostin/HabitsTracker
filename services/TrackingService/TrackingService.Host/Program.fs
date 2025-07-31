@@ -9,23 +9,24 @@ open TrackingService.Host.Grpc
 
 [<EntryPoint>]
 let main args =
-    let builder = WebApplication.CreateBuilder(args)
+    let builder = WebApplication.CreateBuilder (args)
 
-    let connectionString = builder.Configuration.GetConnectionString("TrackingDb")
-    do builder.Services.AddGrpc()
-        .Services.AddScoped<TrackingServiceImpl>(
-            fun _ ->
-                new TrackingServiceImpl(connectionString)
-        ) |> ignore
-
-    let app = builder.Build()
-    do StatusEndpoint.add app |> ignore
-    do app.MapGrpcService<TrackingServiceImpl> () |> ignore
+    let connectionString = builder.Configuration.GetConnectionString ("TrackingDb")
 
     do
-        MigrationRunner.runMigrations
-            connectionString
-            typeof<TrackingService.Migrations.CreateTablesMigration>.Assembly
+        builder.Services
+            .AddGrpc()
+            .Services.AddScoped<TrackingServiceImpl> (fun _ -> new TrackingServiceImpl (connectionString))
+        |> ignore
 
-    app.Run()
+    let app = builder.Build ()
+    do StatusEndpoint.add app |> ignore
+
+    do
+        app.MapGrpcService<TrackingServiceImpl> ()
+        |> ignore
+
+    do MigrationRunner.runMigrations connectionString typeof<TrackingService.Migrations.CreateTablesMigration>.Assembly
+
+    app.Run ()
     0

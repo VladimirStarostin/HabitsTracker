@@ -5,13 +5,19 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Program.fs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\..\services\HabitsService\HabitsService.Protos\HabitsService.Protos.csproj" />
     <ProjectReference Include="..\..\services\TrackingService\TrackingService.Protos\TrackingService.Protos.csproj" />
     <ProjectReference Include="..\..\services\UserService\UserService.Protos\UserService.Protos.csproj" />
+    <ProjectReference Include="..\..\Helpers\Helpers.fsproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Clients\" />
+    <Compile Include="Clients\**" />
+    <Compile Include="Controllers\**" />
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+
+  <ItemGroup />
 
 </Project>

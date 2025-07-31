@@ -5,35 +5,38 @@ open HabitsTracker.Helpers
 
 open HabitsService.Host.DataAccess.Habits
 
-type HabitsServiceImpl(connectionString: string) =
-    inherit HabitsService.HabitsServiceBase()
+type HabitsServiceImpl (connectionString: string) =
+    inherit HabitsService.HabitsServiceBase ()
 
-    override _.GetAll(_, _) =
+    override _.GetAll (_, _) =
         task {
-            let! habits = getAllAsync |> SQLite.executeWithConnection connectionString
-            let response = GetAllResponse()
+            let! habits =
+                getAllAsync
+                |> SQLite.executeWithConnection connectionString
+
+            let response = GetAllResponse ()
 
             for h in habits do
-                response.Habits.Add(Habit(Id = h.Id, Name = h.Name))
+                response.Habits.Add (Habit (Id = h.Id, Name = h.Name))
 
             return response
         }
 
-    override _.GetByIds(request: GetByIdsRequest, _) =
+    override _.GetByIds (request: GetByIdsRequest, _) =
         task {
             let! habits =
                 getByIdsAsync (request.HabitIds |> Seq.toList)
                 |> SQLite.executeWithConnection connectionString
 
-            let response = GetByIdsResponse()
+            let response = GetByIdsResponse ()
 
             for h in habits do
-                response.Habits.Add(Habit(Id = h.Id, Name = h.Name))
+                response.Habits.Add (Habit (Id = h.Id, Name = h.Name))
 
             return response
         }
 
-    override _.Add(request: AddHabitRequest, _) =
+    override _.Add (request: AddHabitRequest, _) =
         task {
             let! id =
                 insertSingleAsync { Name = request.Name }
@@ -44,14 +47,14 @@ type HabitsServiceImpl(connectionString: string) =
                 |> SQLite.executeWithConnection connectionString
 
             let habit = result |> Seq.exactlyOne
-            return AddHabitResponse(Habit = Habit(Id = habit.Id, Name = habit.Name))
+            return AddHabitResponse (Habit = Habit (Id = habit.Id, Name = habit.Name))
         }
 
-    override _.Delete(request: DeleteHabitRequest, _) =
+    override _.Delete (request: DeleteHabitRequest, _) =
         task {
             let! _ =
                 deleteByIdAsync request.Id
                 |> SQLite.executeWithConnection connectionString
 
-            return DeleteHabitResponse()
+            return DeleteHabitResponse ()
         }

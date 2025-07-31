@@ -7,8 +7,8 @@ open System.Threading.Tasks
 open Microsoft.Data.Sqlite
 
 let getConnection (connectionString: string) : IDbConnection =
-    let conn = new SqliteConnection(connectionString)
-    conn.Open()
+    let conn = new SqliteConnection (connectionString)
+    conn.Open ()
     conn :> IDbConnection
 
 let createInMemoryConnection () = getConnection "Data Source=:memory:"
