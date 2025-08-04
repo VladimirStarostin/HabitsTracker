@@ -2,314 +2,215 @@ module TrackingService.Tests.DataAccess.HabitEvents
 
 open System
 
-open Microsoft.Data.Sqlite
+open Npgsql
 
+open Dapper.FSharp.PostgreSQL
 open NUnit.Framework
-open Dapper.FSharp.SQLite
 
 open HabitsTracker.Helpers
 open TrackingService.Host.DataAccess.HabitEvents
 open TrackingService.Migrations
 
-let connectionString = "Data Source=file:memdb1?mode=memory&cache=shared"
+open TrackingService.Tests.DataAccess.Utils.HabitEvents
+
+let connectionString =
+    "Host=localhost;Port=5432;Database=tracking_db;Username=habits_tracker_user;Password=1W@nt70m3J0b"
 
 [<OneTimeSetUp>]
 let Setup () =
     do OptionTypes.register ()
-    do MigrationRunner.runMigrations connectionString (typeof<CreateTablesMigration>.Assembly)
+    do MigrationRunner.runMigrations connectionString (typeof<CreateHabitEventsTableMigration>.Assembly)
+    do Dapper.addRequiredTypeHandlers ()
 
 [<SetUp>]
 let clearDbAsync () =
     task {
-        use conn = new SqliteConnection (connectionString)
+        use conn = new NpgsqlConnection (connectionString)
         let! _ = deleteAllAsync conn
         return ()
     }
 
-[<Test>]
-let ``Select from empty Habits returns empty`` () =
-    task {
-        use conn = new SqliteConnection (connectionString)
-        do conn.Open ()
-        let! result = getAllAsync conn
-        Assert.That (result, Is.Empty)
-    }
-
-let date = "2025-07-28"
+let date = (DateTimeOffset.Parse "2025-07-28").ToUniversalTime ()
 
 [<Test>]
 let ``getByHabitIdsAsync - habit ids selectivity`` () =
     task {
-        use conn = new SqliteConnection (connectionString)
+        use conn = new NpgsqlConnection (connectionString)
         do conn.Open ()
 
-        let habit1 =
-            { HabitId = 1
-              Date = date
+        let habitId1 = 1
+        let habitId2 = 2
+
+        let today = DateTimeOffset.UtcNow
+        let yesterday = today - TimeSpan.FromDays 1
+
+        let insertParams1 =
+            { HabitId = habitId1
+              Date = yesterday.ToUniversalTime ()
               UserId = 1 }
 
-        let habit2 =
-            { HabitId = 2
-              Date = date
-              UserId = 2 }
+        let insertParams2 =
+            { HabitId = habitId1
+              Date = yesterday.ToUniversalTime ()
+              UserId = 1 }
 
-        let habit3 =
-            { HabitId = 3
+        let insertParams3 =
+            { HabitId = habitId2
               Date = date
               UserId = 3 }
 
-        let! id1 = insertSingleAsync habit1 conn
-        let! id2 = insertSingleAsync habit2 conn
-        let! id3 = insertSingleAsync habit3 conn
+        let! event1 = insertSingleAsync insertParams1 conn
+        let! event2 = insertSingleAsync insertParams2 conn
+        let! event3 = insertSingleAsync insertParams3 conn
 
-        let expectedInTable: HabitEvent list =
-            [ { Id = id1
-                HabitId = habit1.HabitId
-                Date = habit1.Date
-                UserId = habit1.UserId }
-              { Id = id2
-                HabitId = habit2.HabitId
-                Date = habit2.Date
-                UserId = habit2.UserId }
-              { Id = id3
-                HabitId = habit3.HabitId
-                Date = habit3.Date
-                UserId = habit3.UserId } ]
+        let expectedInTable: Record list =
+            [ event1; event2; event3 ]
+            |> List.map mapToUtilsRecord
 
         let! actualInTable = getAllAsync conn
         Assert.That (actualInTable, Is.EquivalentTo expectedInTable)
 
-        let expected: HabitEvent list =
-            [ { Id = id2
-                HabitId = habit2.HabitId
-                Date = habit2.Date
-                UserId = habit2.UserId }
-              { Id = id3
-                HabitId = habit3.HabitId
-                Date = habit3.Date
-                UserId = habit3.UserId } ]
-
-        let! actual = getByIdsAsync [ habit2.HabitId; habit3.HabitId ] conn
+        let expected: HabitEvent list = [ event1; event2 ]
+        let! actual = getByHabitIdsAsync (Set [ event2.HabitId ]) conn
         Assert.That (actual, Is.EquivalentTo expected)
     }
 
 [<Test>]
 let ``getByIdsAsync - ids selectivity`` () =
     task {
-        use conn = new SqliteConnection (connectionString)
+        use conn = new NpgsqlConnection (connectionString)
         do conn.Open ()
 
-        let! id1 =
-            insertSingleAsync
-                { HabitId = 1
-                  Date = date
-                  UserId = 1 }
-                conn
+        let insertParams1 =
+            { HabitId = 1
+              Date = date
+              UserId = 1 }
 
-        let! id2 =
-            insertSingleAsync
-                { HabitId = 2
-                  Date = date
-                  UserId = 2 }
-                conn
+        let insertParams2 =
+            { HabitId = 1
+              Date = date
+              UserId = 2 }
 
-        let! id3 =
-            insertSingleAsync
-                { HabitId = 3
-                  Date = date
-                  UserId = 3 }
-                conn
+        let insertParams3 =
+            { HabitId = 2
+              Date = date
+              UserId = 3 }
 
-        let expectedInTable: HabitEvent list =
-            [ { Id = id1
-                HabitId = 1
-                Date = date
-                UserId = 1 }
-              { Id = id2
-                HabitId = 2
-                Date = date
-                UserId = 2 }
-              { Id = id3
-                HabitId = 3
-                Date = date
-                UserId = 3 } ]
+        let! event1 = insertSingleAsync insertParams1 conn
+        let! event2 = insertSingleAsync insertParams2 conn
+        let! event3 = insertSingleAsync insertParams3 conn
+
+        let expectedInTable: Record list =
+            [ event1; event2; event3 ]
+            |> List.map mapToUtilsRecord
 
         let! actualInTable = getAllAsync conn
         Assert.That (actualInTable, Is.EquivalentTo expectedInTable)
 
-        let expected: HabitEvent list =
-            [ { Id = id2
-                HabitId = 2
-                Date = date
-                UserId = 2 }
-              { Id = id3
-                HabitId = 3
-                Date = date
-                UserId = 3 } ]
-
-        let! actual = getByIdsAsync [ id2; id3 ] conn
+        let expected: HabitEvent list = [ event2; event3 ]
+        let! actual = getByIdsAsync (Set [ event2.Id; event3.Id ]) conn
         Assert.That (actual, Is.EquivalentTo expected)
     }
 
 [<Test>]
 let ``getByIdsAsync - empty ids - no rows returned`` () =
     task {
-        use conn = new SqliteConnection (connectionString)
+        use conn = new NpgsqlConnection (connectionString)
         do conn.Open ()
 
-        let! id1 =
-            insertSingleAsync
-                { HabitId = 1
-                  Date = date
-                  UserId = 1 }
-                conn
+        let insertParams1 =
+            { HabitId = 1
+              Date = date
+              UserId = 1 }
 
-        let! id2 =
-            insertSingleAsync
-                { HabitId = 2
-                  Date = date
-                  UserId = 2 }
-                conn
+        let insertParams2 =
+            { HabitId = 1
+              Date = date
+              UserId = 2 }
 
-        let! id3 =
-            insertSingleAsync
-                { HabitId = 3
-                  Date = date
-                  UserId = 3 }
-                conn
+        let insertParams3 =
+            { HabitId = 2
+              Date = date
+              UserId = 3 }
 
-        let expectedInTable: HabitEvent list =
-            [ { Id = id1
-                HabitId = 1
-                Date = date
-                UserId = 1 }
-              { Id = id2
-                HabitId = 2
-                Date = date
-                UserId = 2 }
-              { Id = id3
-                HabitId = 3
-                Date = date
-                UserId = 3 } ]
+        let! event1 = insertSingleAsync insertParams1 conn
+        let! event2 = insertSingleAsync insertParams2 conn
+        let! event3 = insertSingleAsync insertParams3 conn
+
+        let expectedInTable: Record list =
+            [ event1; event2; event3 ]
+            |> List.map mapToUtilsRecord
 
         let! actualInTable = getAllAsync conn
         Assert.That (actualInTable, Is.EquivalentTo expectedInTable)
 
-        let! actual = getByIdsAsync [] conn
+        let! actual = getByIdsAsync Set.empty conn
         Assert.That (actual, Is.Empty)
     }
 
 [<Test>]
 let ``getByIdsAsync - unexistent id - no rows returned`` () =
     task {
-        use conn = new SqliteConnection (connectionString)
+        use conn = new NpgsqlConnection (connectionString)
         do conn.Open ()
 
-        let! id1 =
-            insertSingleAsync
-                { HabitId = 1
-                  Date = date
-                  UserId = 1 }
-                conn
+        let insertParams1 =
+            { HabitId = 1
+              Date = date
+              UserId = 1 }
 
-        let! id2 =
-            insertSingleAsync
-                { HabitId = 2
-                  Date = date
-                  UserId = 2 }
-                conn
+        let insertParams2 =
+            { HabitId = 1
+              Date = date
+              UserId = 2 }
 
-        let! id3 =
-            insertSingleAsync
-                { HabitId = 3
-                  Date = date
-                  UserId = 3 }
-                conn
+        let insertParams3 =
+            { HabitId = 2
+              Date = date
+              UserId = 3 }
 
-        let expectedInTable: HabitEvent list =
-            [ { Id = id1
-                HabitId = 1
-                Date = date
-                UserId = 1 }
-              { Id = id2
-                HabitId = 2
-                Date = date
-                UserId = 2 }
-              { Id = id3
-                HabitId = 3
-                Date = date
-                UserId = 3 } ]
+        let! event1 = insertSingleAsync insertParams1 conn
+        let! event2 = insertSingleAsync insertParams2 conn
+        let! event3 = insertSingleAsync insertParams3 conn
+
+        let expectedInTable: Record list =
+            [ event1; event2; event3 ]
+            |> List.map mapToUtilsRecord
 
         let! actualInTable = getAllAsync conn
         Assert.That (actualInTable, Is.EquivalentTo expectedInTable)
 
-        let! actual = getByIdsAsync (List.singleton 0) conn
+        let! actual = getByIdsAsync (Set.singleton 0) conn
         Assert.That (actual, Is.Empty)
-    }
-
-[<Test>]
-let ``getAllAsync - insert two then select all`` () =
-    task {
-        use conn = new SqliteConnection (connectionString)
-        do conn.Open ()
-
-        let! id1 =
-            insertSingleAsync
-                { HabitId = 1
-                  Date = date
-                  UserId = 1 }
-                conn
-
-        let! id2 =
-            insertSingleAsync
-                { HabitId = 2
-                  Date = date
-                  UserId = 2 }
-                conn
-
-        let expected: HabitEvent list =
-            [ { Id = id1
-                HabitId = 1
-                Date = date
-                UserId = 1 }
-              { Id = id2
-                HabitId = 2
-                Date = date
-                UserId = 2 } ]
-
-        let! actual = getAllAsync conn
-        Assert.That (actual, Is.EquivalentTo expected)
     }
 
 [<Test>]
 let ``deleteByIdAsync - id selectivity`` () =
     task {
-        use conn = new SqliteConnection (connectionString)
+        use conn = new NpgsqlConnection (connectionString)
         do conn.Open ()
 
-        let! id1 =
-            insertSingleAsync
-                { HabitId = 1
-                  Date = date
-                  UserId = 1 }
-                conn
+        let insertParams1 =
+            { HabitId = 1
+              Date = date
+              UserId = 1 }
 
-        let! id2 =
-            insertSingleAsync
-                { HabitId = 2
-                  Date = date
-                  UserId = 2 }
-                conn
+        let insertParams2 =
+            { HabitId = 1
+              Date = date
+              UserId = 2 }
 
-        let! numRowsAffected = deleteByIdAsync id1 conn
+        let! event1 = insertSingleAsync insertParams1 conn
+        let! event2 = insertSingleAsync insertParams2 conn
+
+        let expectedInTable: Record list = [ event1; event2 ] |> List.map mapToUtilsRecord
+        let! actualInTable = getAllAsync conn
+        Assert.That (actualInTable, Is.EquivalentTo expectedInTable)
+
+        let! numRowsAffected = deleteByIdAsync event1.Id conn
         Assert.That (numRowsAffected, Is.EqualTo 1)
 
-        let expected =
-            List.singleton
-                { Id = id2
-                  HabitId = 2
-                  Date = date
-                  UserId = 2 }
+        let expected = event2 |> mapToUtilsRecord |> List.singleton
 
         let! actual = getAllAsync conn
         Assert.That (actual, Is.EqualTo expected)

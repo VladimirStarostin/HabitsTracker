@@ -1,7 +1,8 @@
-﻿[<RequireQualifiedAccessAttribute>]
+[<RequireQualifiedAccess>]
 module HabitsTracker.Helpers.MigrationRunner
 
 open System.Reflection
+
 open Microsoft.Extensions.DependencyInjection
 
 open FluentMigrator.Runner
@@ -12,7 +13,7 @@ let runMigrations (connectionString: string) (migrationAssembly: Assembly) =
             .AddFluentMigratorCore()
             .ConfigureRunner(fun builder ->
                 builder
-                    .AddSQLite()
+                    .AddPostgres()
                     .WithGlobalConnectionString(connectionString)
                     .ScanIn(migrationAssembly)
                     .For.Migrations ()

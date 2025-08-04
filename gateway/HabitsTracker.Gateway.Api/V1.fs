@@ -1,4 +1,18 @@
-﻿namespace HabitsTracker.Gateway.Api
+namespace HabitsTracker.Gateway.Api
 
-module Say =
-    let hello name = printfn "Hello %s" name
+module V1 =
+    [<Literal>]
+    let Prefix = "api/v1/"
+
+    module Events =
+        [<Literal>]
+        let Resourse = Prefix + "events/"
+
+        type CreateHabitParameters =
+            { Name: string
+              Description: string }
+
+        type CreatedHabit =
+            { Id: int
+              Name: string
+              Description: string }

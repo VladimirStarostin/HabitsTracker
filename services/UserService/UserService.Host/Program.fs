@@ -14,7 +14,18 @@ let main args =
     let connectionString = builder.Configuration.GetConnectionString ("UserDb")
 
     do
-        builder.Services.AddGrpc().Services.AddScoped<UserServiceImpl> (fun _ -> new UserServiceImpl (connectionString))
+        builder.Services
+            .AddGrpc()
+            .Services.AddScoped<UserServiceImpl> (fun _ ->
+                UserServiceImpl (
+                    connectionString,
+                    { Secret = "a_very_long_test_secret_key_for_hmacsha256"
+                      Issuer = "test_issuer"
+                      Audience = "test_audience"
+                      AccessTokenValidityMinutes = 60
+                      RefreshTokenValidityDays = 1 }
+                )
+            )
         |> ignore
 
     let app = builder.Build ()
