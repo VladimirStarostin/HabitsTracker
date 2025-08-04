@@ -7,6 +7,14 @@
 
   <ItemGroup>
     <Compile Include="V1.fs" />
+    <Compile Include="Clients\AuthClient.fs" />
+    <Compile Include="Clients\EventsClient.fs" />
+    <Compile Include="Clients\HabitsClient.fs" />
+    <Compile Include="Clients\UsersClient.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Helpers\Helpers.fsproj" />
   </ItemGroup>
 
 </Project>

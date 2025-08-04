@@ -1,4 +1,4 @@
-﻿namespace UserService.Migrations
+namespace UserService.Migrations
 
 open FluentMigrator
 
@@ -11,7 +11,7 @@ type CreateTablesMigration() =
             .WithColumn("Id").AsInt32().PrimaryKey().Identity()
             .WithColumn("Email").AsString(255).NotNullable().Unique()
             .WithColumn("Name").AsString(512).NotNullable()
-            .WithColumn("Hash").AsString(200).NotNullable()
+            .WithColumn("PasswordHash").AsString(200).NotNullable()
         |> ignore
 
     override _.Down() = base.Delete.Table("Users") |> ignore

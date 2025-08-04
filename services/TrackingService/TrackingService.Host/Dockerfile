@@ -14,6 +14,4 @@ RUN dotnet publish services/TrackingService/TrackingService.Host/TrackingService
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 COPY --from=build /app/publish .
-RUN mkdir -p /app/data \
-  && chmod 777 /app/data
 ENTRYPOINT ["dotnet", "TrackingService.Host.dll"]

@@ -9,15 +9,24 @@
     <ProjectReference Include="..\..\services\TrackingService\TrackingService.Protos\TrackingService.Protos.csproj" />
     <ProjectReference Include="..\..\services\UserService\UserService.Protos\UserService.Protos.csproj" />
     <ProjectReference Include="..\..\Helpers\Helpers.fsproj" />
+    <ProjectReference Include="..\HabitsTracker.Gateway.Api\HabitsTracker.Gateway.Api.fsproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Clients\" />
     <Compile Include="Clients\**" />
-    <Compile Include="Controllers\**" />
+    <Compile Include="DomainServices\GeneralService.fs" />
+    <Compile Include="HttpHandlers\**" />
+    <Compile Include="WebApp.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
-  <ItemGroup />
+  <ItemGroup>
+    <PackageReference Include="Giraffe" Version="7.0.2" />
+    <PackageReference Include="Grpc.Net.ClientFactory" Version="2.71.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.18" />
+    <PackageReference Include="Swashbuckle.AspNetCore.Swagger" Version="9.0.3" />
+    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="9.0.3" />
+    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="9.0.3" />
+  </ItemGroup>
 
 </Project>

@@ -6,10 +6,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="CommonUtils.fs" />
+    <Compile Include="DataAccess\Utils.fs" />
+    <Compile Include="DataAccess\CommonTestMethods.fs" />
+    <Compile Include="DataAccess\Users.fs" />
+    <Compile Include="DataAccess\RefreshTokens.fs" />
     <Compile Include="Domain\Authentification.fs" />
-    <Compile Include="Users.fs" />
-    <Compile Include="RefreshTokens.fs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -5,18 +5,22 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Dapper.fs" />
+    <Compile Include="PipelineBuilder.fs" />
     <Compile Include="Task.fs" />
     <Compile Include="HeadersParser.fs" />
-    <Compile Include="SQLite.fs" />
+    <Compile Include="Postgres.fs" />
     <Compile Include="StatusEndpoint.fs" />
     <Compile Include="MigrationsRunner.fs" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Dapper" Version="2.1.66" />
     <PackageReference Include="FluentMigrator.Runner" Version="7.1.0" />
-    <PackageReference Include="FluentMigrator.Runner.SQLite" Version="7.1.0" />
+    <PackageReference Include="FluentMigrator.Runner.Postgres" Version="7.1.0" />
+    <PackageReference Include="Google.Protobuf" Version="3.31.1" />
     <PackageReference Include="Grpc.Core" Version="2.46.6" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.7" />
+    <PackageReference Include="Npgsql" Version="8.0.7" />
   </ItemGroup>
 
 </Project>

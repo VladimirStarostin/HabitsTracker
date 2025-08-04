@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:15
+    networks:
+      - habits-net
+    restart: always
+    environment:
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+    ports:
+      - '${PG_PORT}:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./initdb:/docker-entrypoint-initdb.d:ro
+volumes:
+  pgdata:
+
+networks:
+  habits-net:
+    external: true
+    name: habitstracker-net
