@@ -9,6 +9,7 @@ open TrackingService.Host.Grpc
 
 [<EntryPoint>]
 let main args =
+    do Dapper.addRequiredTypeHandlers ()
     let builder = WebApplication.CreateBuilder (args)
 
     let connectionString = builder.Configuration.GetConnectionString ("TrackingDb")
@@ -26,7 +27,10 @@ let main args =
         app.MapGrpcService<TrackingServiceImpl> ()
         |> ignore
 
-    do MigrationRunner.runMigrations connectionString typeof<TrackingService.Migrations.CreateTablesMigration>.Assembly
+    do
+        MigrationRunner.runMigrations
+            connectionString
+            typeof<TrackingService.Migrations.CreateHabitEventsTableMigration>.Assembly
 
     app.Run ()
     0

@@ -6,7 +6,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="V1.fs" />
+    <Compile Include="V1\Api.fs" />
+    <Compile Include="V1\Clients.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Helpers\Helpers.fsproj" />
   </ItemGroup>
 
 </Project>

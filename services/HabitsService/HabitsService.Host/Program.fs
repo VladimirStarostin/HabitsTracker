@@ -9,6 +9,7 @@ open HabitsService.Host.Grpc
 
 [<EntryPoint>]
 let main args =
+    do Dapper.addRequiredTypeHandlers ()
     let builder = WebApplication.CreateBuilder (args)
 
     let connectionString = builder.Configuration.GetConnectionString ("HabitsDb")

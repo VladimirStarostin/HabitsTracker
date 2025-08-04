@@ -12,6 +12,9 @@ EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "HabitsTracker.Gateway.Tests", "gateway\HabitsTracker.Gateway.Tests\HabitsTracker.Gateway.Tests.fsproj", "{8CB71C03-9AA2-E757-9816-15185C51F181}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Services", "Services", "{627902F0-CF7D-40A8-943E-97AF69837519}"
+	ProjectSection(SolutionItems) = preProject
+		gateway\HabitsTracker.Gateway.Tests\UseCases\Common - habit lifecycle.fs = gateway\HabitsTracker.Gateway.Tests\UseCases\Common - habit lifecycle.fs
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "UserService", "UserService", "{BD0B7649-B52E-43DC-B6B7-D42619D5530A}"
 EndProject

@@ -1,0 +1,3 @@
+CREATE DATABASE habits_db;
+CREATE DATABASE tracking_db;
+CREATE DATABASE users_db;

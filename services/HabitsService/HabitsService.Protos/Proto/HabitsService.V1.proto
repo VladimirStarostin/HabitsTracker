@@ -3,41 +3,49 @@ syntax = "proto3";
 package habits_service.v1;
 
 service HabitsService {
-  rpc GetAll (GetAllRequest) returns (GetAllResponse);
-  rpc Add (AddHabitRequest) returns (AddHabitResponse);
+  rpc Create (CreateHabitRequest) returns (CreateHabitResponse);
   rpc Delete (DeleteHabitRequest) returns (DeleteHabitResponse);
   rpc GetByIds (GetByIdsRequest) returns (GetByIdsResponse);
+  rpc GetByUserIds (GetByUserIdsRequest) returns (GetByUserIdsResponse);
 }
 
-message GetAllRequest {}
-
-message GetAllResponse {
-  repeated Habit habits = 1;
-}
-
-message AddHabitRequest {
+message CreateHabitRequest {
   string name = 1;
+  string description = 2;
+  int32 owner_user_id = 3;
 }
 
-message AddHabitResponse {
+message CreateHabitResponse {
   Habit habit = 1;
 }
 
 message DeleteHabitRequest {
-  int64 id = 1;
+  int32 id = 1;
 }
 
-message DeleteHabitResponse {}
+message DeleteHabitResponse {
+  int32 deleted_rows_count = 1;
+}
 
 message Habit {
-  int64 id = 1;
+  int32 id = 1;
   string name = 2;
+  string description = 3;
+  int32 owner_user_id = 4;
 }
 
 message GetByIdsRequest {
-	repeated int64 habitIds = 1;
+  repeated int32 habit_ids = 1;
 }
 
 message GetByIdsResponse {
-	repeated Habit habits = 1;
+  repeated Habit habits = 1;
+}
+
+message GetByUserIdsRequest {
+  repeated int32 user_ids = 1;
+}
+
+message GetByUserIdsResponse {
+  repeated Habit habits = 1;
 }
