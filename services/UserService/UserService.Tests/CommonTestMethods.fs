@@ -1,4 +1,4 @@
-module UserService.Tests.CommonUtils
+module UserService.Tests.DataAccess.Utils.CommonTestMethods
 
 open System
 open System.Data
@@ -6,6 +6,8 @@ open System.Threading.Tasks
 
 module RefreshTokens = UserService.Host.DataAccess.RefreshTokens
 module Users = UserService.Host.DataAccess.Users
+
+module UsersUtils = UserService.Tests.DataAccess.Utils.Users
 
 let defaultDate = DateTime.Parse "2025-07-28"
 
@@ -16,6 +18,13 @@ let defaultRecord: RefreshTokens.InsertDto =
       IsRevoked = false
       CreatedAt = defaultDate }
 
+let clearDbAsync (conn: Npgsql.NpgsqlConnection) =
+    task {
+        let! _ = RefreshTokenUtils.deleteAllAsync conn
+        let! _ = UsersUtils.deleteAllAsync conn
+        return ()
+    }
+
 let insertRefreshTokenRecordForUser
     (name: string)
     (token: string option)
@@ -23,11 +32,11 @@ let insertRefreshTokenRecordForUser
     (conn: IDbConnection)
     : Task<RefreshTokens.RefreshTokenRecord> =
     task {
-        let! userId =
+        let! user =
             UserService.Host.DataAccess.Users.insertSingleAsync
                 { Email = name
                   Name = name
-                  Hash = System.Guid.NewGuid().ToString () }
+                  PasswordHash = System.Guid.NewGuid().ToString () }
                 conn
 
         let token =
@@ -38,16 +47,7 @@ let insertRefreshTokenRecordForUser
             { defaultRecord with
                 Token = token
                 ExpiresAt = expirationDate |> Option.defaultValue defaultDate
-                UserId = userId }
+                UserId = user.Id }
 
-        let! insertedRecordId = RefreshTokens.insertSingleAsync recordForUser conn
-
-        return
-            ({ Id = insertedRecordId
-               Token = token
-               UserId = recordForUser.UserId
-               ExpiresAt = recordForUser.ExpiresAt
-               IsRevoked = false
-               CreatedAt = defaultDate }
-            : RefreshTokens.RefreshTokenRecord)
+        return! RefreshTokens.insertSingleAsync recordForUser conn
     }

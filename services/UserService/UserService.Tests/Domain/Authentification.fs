@@ -1,18 +1,25 @@
 module UserService.Tests.Domain.Services.Authentication
 
 open System
-open Microsoft.Data.Sqlite
 
-open NUnit.Framework
 open Dapper.FSharp.SQLite
+open Npgsql
+open NUnit.Framework
 
 open HabitsTracker.Helpers
-open UserService.Host.DataAccess.RefreshTokens
-open UserService.Host.Domain.Services.Authentication
+open UserService.Host.Domain.Common.Types
+open UserService.Host.Domain.Common.Operations
+open UserService.Host.Domain.Operations
 open UserService.Migrations
-open UserService.Tests
 
-let connectionString = "Data Source=file:memdb_auth?mode=memory&cache=shared"
+module UsersUtils = UserService.Tests.DataAccess.Utils.Users
+
+open UserService.Tests.DataAccess.Utils
+open UserService.Tests.DataAccess.Utils.RefreshTokenUtils
+open UserService.Tests.DataAccess.Utils.CommonTestMethods
+
+let connectionString =
+    "Host=localhost;Port=5432;Database=users_db;Username=habits_tracker_user;Password=1W@nt70m3J0b"
 
 let defaultJwtSettings =
     { Secret = "a_very_long_test_secret_key_for_hmacsha256"
@@ -27,102 +34,103 @@ let Setup () =
     do MigrationRunner.runMigrations connectionString (typeof<CreateTablesMigration>.Assembly)
 
 [<SetUp>]
-let clearDbAsync () =
+let prepareDbAsync () =
     task {
-        use conn = new SqliteConnection (connectionString)
-        let! _ = deleteAllAsync conn
+        use conn = new NpgsqlConnection (connectionString)
+        let! _ = CommonTestMethods.clearDbAsync conn
         return ()
     }
 
 [<Test>]
 let ``validateInput - missing token returns MissingToken error`` () =
-    match Steps.validateInput "" with
-    | Error err ->
-        Assert.That (err, Is.EqualTo AuthError.MissingToken)
+    match Authentication.Steps.validateInput "" with
+    | Authentication.PipelineResult.Ok _ -> Assert.Fail ("Expected MissingToken error, but got Ok")
+    | Authentication.PipelineResult.Error err ->
+        Assert.That (err, Is.EqualTo Authentication.AuthError.MissingToken)
         Assert.That (err.ToErrMessage (), Is.EqualTo "Refresh token was not provided.")
-    | Ok _ -> Assert.Fail ("Expected MissingToken error, but got Ok")
 
 [<Test>]
 let ``validateInput - valid token returns Ok`` () =
-    match Steps.validateInput "some-token" with
-    | Ok v -> Assert.That (v, Is.EqualTo "some-token")
-    | Error e -> Assert.Fail ($"Expected Ok, but got Error {e}")
+    match Authentication.Steps.validateInput "some-token" with
+    | Authentication.PipelineResult.Ok v -> Assert.That (v, Is.EqualTo "some-token")
+    | Authentication.PipelineResult.Error e -> Assert.Fail ($"Expected Ok, but got Error {e}")
 
 [<Test>]
 let ``validateExistingRefreshToken - expired token returns TokenExpired`` () =
     let expired =
-        { UserId = 1L
+        { UserId = 1
           Token = "t"
           ExpiresAt = DateTime.UtcNow.AddDays (-1.0)
           IsRevoked = false }
 
-    match Steps.validateExistingRefreshToken expired with
-    | Error AuthError.TokenExpired -> ()
-    | Error e -> Assert.Fail ($"Expected TokenExpired, but got {e}")
-    | Ok _ -> Assert.Fail ("Expected TokenExpired error, but got Ok")
+    match Authentication.Steps.validateExistingRefreshToken expired with
+    | Authentication.PipelineResult.Error Authentication.AuthError.TokenExpired -> ()
+    | Authentication.PipelineResult.Error e -> Assert.Fail ($"Expected TokenExpired, but got {e}")
+    | Authentication.PipelineResult.Ok _ -> Assert.Fail ("Expected TokenExpired error, but got Ok")
 
 [<Test>]
 let ``validateExistingRefreshToken - revoked token returns TokenRevoked`` () =
     let revoked =
-        { UserId = 2L
+        { UserId = 2
           Token = "t2"
           ExpiresAt = DateTime.UtcNow.AddDays (1.0)
           IsRevoked = true }
 
-    match Steps.validateExistingRefreshToken revoked with
-    | Error AuthError.TokenRevoked -> ()
-    | Error e -> Assert.Fail ($"Expected TokenRevoked, but got {e}")
-    | Ok _ -> Assert.Fail ("Expected TokenRevoked error, but got Ok")
+    match Authentication.Steps.validateExistingRefreshToken revoked with
+    | Authentication.PipelineResult.Error Authentication.AuthError.TokenRevoked -> Assert.Pass ()
+    | Authentication.PipelineResult.Error e -> Assert.Fail ($"Expected TokenRevoked, but got {e}")
+    | Authentication.PipelineResult.Ok _ -> Assert.Fail ("Expected TokenRevoked error, but got Ok")
 
 [<Test>]
 let ``createNewToken - generates new token with updated expiry`` () =
     let now = DateTime.UtcNow
 
     let existing =
-        { UserId = 3L
+        { UserId = 3
           Token = "old"
           ExpiresAt = now
           IsRevoked = false }
 
-    match Steps.createNewToken existing defaultJwtSettings with
-    | Ok newToken ->
+    match createRefreshToken existing.UserId defaultJwtSettings with
+    | Authentication.PipelineResult.Ok newToken ->
         Assert.That (newToken.UserId, Is.EqualTo existing.UserId)
         Assert.That (newToken.Token, Is.Not.EqualTo existing.Token)
         Assert.That (newToken.ExpiresAt, Is.GreaterThan now)
         Assert.That (newToken.IsRevoked, Is.False)
-    | Error e -> Assert.Fail ($"Expected Ok, but got Error {e}")
+    | Authentication.PipelineResult.Error e -> Assert.Fail ($"Expected Ok, but got Error {e}")
 
 [<Test>]
 let ``generateJwt - returns AuthResponse with access and refresh tokens`` () =
     let refreshTok = "sample-refresh-token"
-    let userId = 42L
+    let userId = 42
 
-    match Steps.generateJwt refreshTok userId defaultJwtSettings with
-    | Ok resp ->
+    match generateJwt refreshTok userId defaultJwtSettings with
+    | Authentication.PipelineResult.Ok resp ->
         Assert.That (resp.RefreshToken, Is.EqualTo refreshTok)
         Assert.That (resp.AccessToken, Is.Not.Empty)
-    | Error e -> Assert.Fail ($"Expected Ok, but got Error {e}")
+    | Authentication.PipelineResult.Error e -> Assert.Fail ($"Expected Ok, but got Error {e}")
 
 [<Test>]
 let ``validateAndRefresh - full integration creates new token and returns AuthResponse`` () =
     task {
-        use conn = new SqliteConnection (connectionString)
+        use conn = new NpgsqlConnection (connectionString)
         do conn.Open ()
         let initialToken = "refresh token"
 
         let! _ =
-            CommonUtils.insertRefreshTokenRecordForUser
+            insertRefreshTokenRecordForUser
                 "Alice"
                 (Some initialToken)
                 (Some (DateTime.UtcNow + TimeSpan.FromDays (1)))
                 conn
 
-        let! authResp = validateAndRefresh initialToken connectionString defaultJwtSettings
+        match! Authentication.runPipelineAsync initialToken defaultJwtSettings conn with
+        | Authentication.PipelineResult.Ok authResp ->
+            Assert.That (authResp.RefreshToken, Is.Not.EqualTo initialToken)
+            Assert.That (authResp.AccessToken, Is.Not.Empty)
 
-        Assert.That (authResp.RefreshToken, Is.Not.EqualTo initialToken)
-        Assert.That (authResp.AccessToken, Is.Not.Empty)
-
-        let! allTokens = getAllAsync conn
-        let persisted = allTokens |> List.map (fun r -> r.Token)
-        Assert.That (persisted, Does.Contain authResp.RefreshToken)
+            let! allTokens = getAllAsync conn
+            let persisted = allTokens |> List.map (fun r -> r.Token)
+            Assert.That (persisted, Does.Contain authResp.RefreshToken)
+        | _ -> Assert.Fail ()
     }

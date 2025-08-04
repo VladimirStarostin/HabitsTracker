@@ -1,6 +1,6 @@
-﻿namespace TrackingService.Host.Grpc
+namespace TrackingService.Host.Grpc
 
-open System
+open System.Threading.Tasks
 
 open Grpc.Core
 
@@ -12,50 +12,56 @@ open TrackingService.Host.DataAccess.HabitEvents
 type TrackingServiceImpl (connectionString: string) =
     inherit TrackingService.TrackingServiceBase ()
 
-    override _.GetEventsByHabitIds
-        (request: GetEventsByHabitIdsRequest, _)
-        : Threading.Tasks.Task<GetEventsByHabitIdsResponse> =
+    override _.GetEventsByHabitIds (request: GetEventsByHabitIdsRequest, _) : Task<GetEventsByHabitIdsResponse> =
         task {
             let! events =
-                getByHabitIdsAsync (request.HabitIds |> Seq.toList)
-                |> SQLite.executeWithConnection connectionString
+                getByHabitIdsAsync (request.HabitIds |> Set.ofSeq)
+                |> Postgres.executeWithConnection connectionString
 
             let response = GetEventsByHabitIdsResponse ()
 
             for e in events do
-                response.Events.Add (HabitEvent (Id = e.Id, HabitId = e.HabitId, UserId = e.UserId, Date = e.Date))
+                response.Events.Add (
+                    HabitEvent (
+                        Id = e.Id,
+                        HabitId = e.HabitId,
+                        UserId = e.UserId,
+                        Date = (e.Date |> Grpc.toProtoTimestamp)
+                    )
+                )
 
             return response
         }
 
-    override _.GetEventsByIds (request: GetEventsByIdsRequest, _) : Threading.Tasks.Task<GetEventsByIdsResponse> =
+    override _.GetEventsByIds (request: GetEventsByIdsRequest, _) : Task<GetEventsByIdsResponse> =
         task {
             let! events =
-                getByIdsAsync (request.Ids |> Seq.toList)
-                |> SQLite.executeWithConnection connectionString
+                getByIdsAsync (request.Ids |> Set.ofSeq)
+                |> Postgres.executeWithConnection connectionString
 
             let response = GetEventsByIdsResponse ()
 
             for e in events do
-                response.Events.Add (HabitEvent (Id = e.Id, HabitId = e.HabitId, UserId = e.UserId, Date = e.Date))
+                response.Events.Add (
+                    HabitEvent (
+                        Id = e.Id,
+                        HabitId = e.HabitId,
+                        UserId = e.UserId,
+                        Date = (e.Date |> Grpc.toProtoTimestamp)
+                    )
+                )
 
             return response
         }
 
     override _.TrackHabit (request: TrackHabitRequest, context: ServerCallContext) =
         task {
-            let! id =
+            let! habitEvent =
                 insertSingleAsync
                     { HabitId = request.HabitId
-                      Date = request.Date
-                      UserId = HeadersParser.getUserId context.RequestHeaders }
-                |> SQLite.executeWithConnection connectionString
-
-            let! result =
-                getByIdsAsync (List.singleton id)
-                |> SQLite.executeWithConnection connectionString
-
-            let habitEvent = result |> Seq.exactlyOne
+                      Date = request.Date |> Grpc.fromProtoTimestamp
+                      UserId = Grpc.getUserId context.RequestHeaders }
+                |> Postgres.executeWithConnection connectionString
 
             return
                 TrackHabitResponse (
@@ -64,7 +70,7 @@ type TrackingServiceImpl (connectionString: string) =
                             Id = habitEvent.Id,
                             HabitId = habitEvent.HabitId,
                             UserId = habitEvent.UserId,
-                            Date = habitEvent.Date
+                            Date = (habitEvent.Date |> Grpc.toProtoTimestamp)
                         )
                 )
         }
@@ -73,7 +79,7 @@ type TrackingServiceImpl (connectionString: string) =
         task {
             let! deletedRowsCount =
                 deleteByIdAsync request.Id
-                |> SQLite.executeWithConnection connectionString
+                |> Postgres.executeWithConnection connectionString
 
             return DeleteEventResponse (DeletedRowsCount = deletedRowsCount)
         }

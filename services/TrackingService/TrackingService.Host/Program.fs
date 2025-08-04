@@ -26,7 +26,10 @@ let main args =
         app.MapGrpcService<TrackingServiceImpl> ()
         |> ignore
 
-    do MigrationRunner.runMigrations connectionString typeof<TrackingService.Migrations.CreateTablesMigration>.Assembly
+    do
+        MigrationRunner.runMigrations
+            connectionString
+            typeof<TrackingService.Migrations.CreateHabitEventsTableMigration>.Assembly
 
     app.Run ()
     0

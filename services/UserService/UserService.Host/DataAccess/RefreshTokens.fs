@@ -5,44 +5,34 @@ open System.Data
 open System.Threading.Tasks
 
 open Dapper
-open Dapper.FSharp.SQLite
+open Dapper.FSharp.PostgreSQL
 
 open HabitsTracker.Helpers
 
 type RefreshTokenRecord =
-    { Id: int64
+    { Id: int
       Token: string
-      UserId: int64
+      UserId: int
       ExpiresAt: DateTime
       IsRevoked: bool
       CreatedAt: DateTime }
 
 type InsertDto =
     { Token: string
-      UserId: int64
+      UserId: int
       ExpiresAt: DateTime
       IsRevoked: bool
       CreatedAt: DateTime }
 
 let refreshTokens = table'<RefreshTokenRecord> "RefreshTokens"
 
-let insertSingleAsync (insertDto: InsertDto) (conn: IDbConnection) : Task<int64> =
-    task {
-        use tx = conn.BeginTransaction ()
-
-        let! _ =
-            insert {
-                into (table'<InsertDto> "RefreshTokens")
-                value insertDto
-            }
-            |> conn.InsertAsync
-
-        let! id = conn.ExecuteScalarAsync<int64> ("SELECT last_insert_rowid()", transaction = tx)
-
-        tx.Commit ()
-
-        return id
+let insertSingleAsync (insertDto: InsertDto) (conn: IDbConnection) : Task<RefreshTokenRecord> =
+    insert {
+        into (table'<InsertDto> "RefreshTokens")
+        value insertDto
     }
+    |> conn.InsertOutputAsync<InsertDto, RefreshTokenRecord>
+    |> Task.map Seq.exactlyOne
 
 let findRecordByTokenAsync (token: string) (conn: IDbConnection) : Task<RefreshTokenRecord option> =
     select {
@@ -60,22 +50,7 @@ let revokeByTokenAsync (token: string) (conn: IDbConnection) =
     }
     |> conn.UpdateAsync
 
-let getAllAsync (conn: IDbConnection) : Task<RefreshTokenRecord list> =
-    select {
-        for rt in refreshTokens do
-            selectAll
-    }
-    |> conn.SelectAsync<RefreshTokenRecord>
-    |> Task.map List.ofSeq
-
-let deleteAllAsync (conn: IDbConnection) =
-    delete {
-        for rt in refreshTokens do
-            deleteAll
-    }
-    |> conn.DeleteAsync
-
-let deleteByIdAsync (id: int64) (conn: IDbConnection) =
+let deleteByIdAsync (id: int) (conn: IDbConnection) =
     delete {
         for rt in refreshTokens do
             where (rt.Id = id)

@@ -6,7 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="CommonUtils.fs" />
+    <Compile Include="Utils.fs" />
+    <Compile Include="CommonTestMethods.fs" />
     <Compile Include="Domain\Authentification.fs" />
     <Compile Include="Users.fs" />
     <Compile Include="RefreshTokens.fs" />

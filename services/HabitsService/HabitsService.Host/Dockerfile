@@ -14,6 +14,4 @@ RUN dotnet publish services/HabitsService/HabitsService.Host/HabitsService.Host.
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 COPY --from=build /app/publish .
-RUN mkdir -p /app/data \
-  && chmod 777 /app/data
 ENTRYPOINT ["dotnet", "HabitsService.Host.dll"]
