@@ -30,7 +30,7 @@ type UserServiceImpl (connectionString: string, jwtSettings: JwtSettings, hasher
                         AccessToken = authResponse.AccessToken,
                         RefreshToken = authResponse.RefreshToken
                     )
-            | Registration.PipelineResult.Error err -> return failwith (err.ToErrMessage ())
+            | Registration.PipelineResult.Error err -> return raise (Registration.toRpcError err)
         }
 
     override _.Login (request: LoginRequest, context: ServerCallContext) : Task<UserService.V1.AuthResponse> =
@@ -50,7 +50,7 @@ type UserServiceImpl (connectionString: string, jwtSettings: JwtSettings, hasher
                         RefreshToken = authResponse.RefreshToken
                     )
             | Login.PipelineResult.Error err ->
-                return failwith(err.ToErrMessage())
+                return raise (Login.toRpcError err)
         }
 
     override _.GetByIds (request: GetByIdsRequest, _) : Task<GetByIdsResponse> =
@@ -90,5 +90,5 @@ type UserServiceImpl (connectionString: string, jwtSettings: JwtSettings, hasher
                         AccessToken = authResponse.AccessToken,
                         RefreshToken = authResponse.RefreshToken
                     )
-            | Authentication.PipelineResult.Error err -> return failwith (err.ToErrMessage ())
+            | Authentication.PipelineResult.Error err -> return raise (Authentication.toRpcError err)
         }

@@ -3,6 +3,7 @@ module internal UserService.Host.Domain.Operations.Registration
 
 open System.Data
 open System.Threading.Tasks
+open Grpc.Core
 
 open BCrypt.Net
 
@@ -85,3 +86,12 @@ let runPipelineAsync
         let! authResp = generateJwt rtString rtObj.UserId jwtSettings
         return authResp
     }
+
+let toRpcError (err: RegistrationError) : RpcException =
+    let status =
+        match err with
+        | UserAlreadyExists -> Status(StatusCode.AlreadyExists, "User already exists.")
+        | PasswordHashingError detail -> Status(StatusCode.Internal, $"Error hashing the password: {detail}")
+        | DbError detail -> Status(StatusCode.Internal, $"Error working with db: {detail}")
+        | TokenError detail -> Status(StatusCode.Internal, $"Failed to generate token: {detail}")
+    RpcException(status)

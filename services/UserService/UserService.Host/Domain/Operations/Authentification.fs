@@ -4,6 +4,7 @@ module internal UserService.Host.Domain.Operations.Authentication
 open System
 open System.Data
 open System.Threading.Tasks
+open Grpc.Core
 
 open HabitsTracker.Helpers
 open HabitsTracker.Helpers.Pipelines
@@ -85,3 +86,14 @@ let runPipelineAsync
 
         return authResp
     }
+
+let toRpcError (err: AuthError) : RpcException =
+    let status =
+        match err with
+        | MissingToken -> Status(StatusCode.InvalidArgument, "Refresh token was not provided.")
+        | TokenNotFound -> Status(StatusCode.NotFound, "Refresh token not found in the database.")
+        | TokenExpired -> Status(StatusCode.Unauthenticated, "Refresh token has expired.")
+        | TokenRevoked -> Status(StatusCode.PermissionDenied, "Refresh token has been revoked.")
+        | DbError msg -> Status(StatusCode.Internal, $"Database error while handling refresh token: {msg}")
+        | JwtError msg -> Status(StatusCode.Internal, $"JWT error (signing or validation failed): {msg}")
+    RpcException(status)

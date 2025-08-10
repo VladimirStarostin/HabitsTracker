@@ -4,6 +4,7 @@ module internal UserService.Host.Domain.Operations.Login
 open System
 open System.Data
 open System.Threading.Tasks
+open Grpc.Core
 
 open HabitsTracker.Helpers.Pipelines
 
@@ -97,3 +98,15 @@ let runPipelineAsync
 
         return authResp
     }
+
+let toRpcError (err: LoginError) : RpcException =
+    let status =
+        match err with
+        | InvalidInput msg -> Status(StatusCode.InvalidArgument, msg)
+        | UserNotFound -> Status(StatusCode.NotFound, "User not found.")
+        | InvalidPassword -> Status(StatusCode.PermissionDenied, "Invalid password.")
+        | PasswordHashingError msg -> Status(StatusCode.Internal, $"Password hashing error: {msg}")
+        | DbError msg -> Status(StatusCode.Internal, $"Database error: {msg}")
+        | TokenError msg -> Status(StatusCode.Internal, $"Token generation error: {msg}")
+        | JwtError msg -> Status(StatusCode.Internal, $"JWT error: {msg}")
+    RpcException(status)
