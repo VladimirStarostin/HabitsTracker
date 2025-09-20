@@ -2,22 +2,26 @@ syntax = "proto3";
 
 package tracking_service.v1;
 
+import "google/protobuf/timestamp.proto";
+
 service TrackingService {
-  rpc GetAllEvents (GetAllEventsRequest) returns (GetAllEventsResponse);
+  rpc GetEventsByHabitIds (GetEventsByHabitIdsRequest) returns (GetEventsByHabitIdsResponse);
   rpc TrackHabit (TrackHabitRequest) returns (TrackHabitResponse);
   rpc DeleteEvent (DeleteEventRequest) returns (DeleteEventResponse);
-  rpc GetByIds (GetByIdsRequest) returns (GetByIdsResponse);
+  rpc GetEventsByIds (GetEventsByIdsRequest) returns (GetEventsByIdsResponse);
 }
 
-message GetAllEventsRequest {}
+message GetEventsByHabitIdsRequest {
+  repeated int32 habit_ids = 1;
+}
 
-message GetAllEventsResponse {
+message GetEventsByHabitIdsResponse {
   repeated HabitEvent events = 1;
 }
 
 message TrackHabitRequest {
-  int64 habit_id = 1;
-  string date = 2; //ISO-8601
+  int32 habit_id = 1;
+  google.protobuf.Timestamp date = 2;
 }
 
 message TrackHabitResponse {
@@ -25,22 +29,24 @@ message TrackHabitResponse {
 }
 
 message DeleteEventRequest {
-  int32 event_id = 1;
+  repeated int32 ids = 1;
 }
 
-message DeleteEventResponse {}
+message DeleteEventResponse {
+  int32 deleted_rows_count = 1;
+}
 
 message HabitEvent {
-  int64 id = 1;
-  int64 habit_id = 2;
-  int64 user_id = 3;
-  string date = 4; //ISO-8601
+  int32 id = 1;
+  int32 habit_id = 2;
+  int32 user_id = 3;
+  google.protobuf.Timestamp date = 4;
 }
 
-message GetByIdsRequest {
-  repeated int64 event_ids = 1;
+message GetEventsByIdsRequest {
+  repeated int32 ids = 1;
 }
 
-message GetByIdsResponse {
+message GetEventsByIdsResponse {
    repeated HabitEvent events = 1;
 }

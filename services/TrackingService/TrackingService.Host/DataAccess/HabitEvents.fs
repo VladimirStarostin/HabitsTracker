@@ -1,67 +1,65 @@
-﻿module TrackingService.Host.DataAccess.HabitEvents
+module TrackingService.Host.DataAccess.Habits
 
 open System
 open System.Data
+open System.Threading.Tasks
 
-open Dapper
-open Dapper.FSharp.SQLite
+open Dapper.FSharp.PostgreSQL
+
+open HabitsTracker.Helpers
 
 type HabitEvent =
-    { Id: int64
-      HabitId: int64
-      UserId: int64
-      Date: string }
+    { Id: int
+      HabitId: int
+      UserId: int
+      Date: DateTimeOffset }
 
 type InsertDto =
-    { HabitId: int64
-      UserId: int64
-      Date: string }
+    { HabitId: int
+      UserId: int
+      Date: DateTimeOffset }
 
 let habitEvents = table'<HabitEvent> "HabitEvents"
 
-let getAllAsync (conn: IDbConnection) =
-    select {
-        for h in habitEvents do
-            selectAll
+let getByHabitIdsAsync (habitIds: int Set) (conn: IDbConnection) : Task<HabitEvent Set> =
+    if habitIds.IsEmpty then
+        Task.FromResult Set.empty
+    else
+        let habitIdsList = habitIds |> Set.toList
+
+        select {
+            for e in habitEvents do
+                where (isIn e.HabitId habitIdsList)
+                selectAll
+        }
+        |> conn.SelectAsync<HabitEvent>
+        |> Task.map Set.ofSeq
+
+let getByIdsAsync (ids: int Set) (conn: IDbConnection) : Task<HabitEvent Set> =
+    if ids.IsEmpty then
+        Task.FromResult Set.empty
+    else
+        let idsList = ids |> Set.toList
+
+        select {
+            for e in habitEvents do
+                where (isIn e.Id idsList)
+                selectAll
+        }
+        |> conn.SelectAsync<HabitEvent>
+        |> Task.map Set.ofSeq
+
+let insertSingleAsync (insertDto: InsertDto) (conn: IDbConnection) : Task<HabitEvent> =
+    insert {
+        into (table'<InsertDto> "HabitEvents")
+        value insertDto
     }
-    |> conn.SelectAsync<HabitEvent>
+    |> conn.InsertOutputAsync<InsertDto, HabitEvent>
+    |> Task.map Seq.exactlyOne
 
-let getByIdsAsync (ids: int64 list) (conn: IDbConnection) =
-    select {
-        for h in habitEvents do
-            where (isIn h.Id ids)
-            selectAll
-    }
-    |> conn.SelectAsync<HabitEvent>
-
-let insertSingleAsync (insertDto: InsertDto) (conn: IDbConnection) =
-    task {
-        use tx = conn.BeginTransaction()
-
-        let! _ =
-            insert {
-                into (table'<InsertDto> "HabitEvents")
-                value insertDto
-            }
-            |> fun q -> conn.InsertAsync(q, tx)
-
-        let! id = conn.ExecuteScalarAsync<int>("SELECT last_insert_rowid()", transaction = tx)
-
-        tx.Commit()
-
-        return int id
-    }
-
-let deleteAllAsync (conn: IDbConnection) =
-    delete {
-        for _ in habitEvents do
-            deleteAll
-    }
-    |> conn.DeleteAsync
-
-let deleteByIdAsync (id: int64) (conn: IDbConnection) =
+let deleteByIdsAsync (ids: int list) (userId: int) (conn: IDbConnection) =
     delete {
         for h in habitEvents do
-            where (h.Id = id)
+            where (isIn h.Id ids && h.UserId = userId)
     }
     |> conn.DeleteAsync
