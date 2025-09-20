@@ -3,6 +3,8 @@ services:
         build:
             context: ../../
             dockerfile: services/UserService/UserService.Host/Dockerfile
+        networks:
+            - habits-net
         ports:
             - "5010:5010"
             - "5011:5011"
@@ -11,7 +13,15 @@ services:
         environment:
           - ASPNETCORE_ENVIRONMENT
           - ConnectionStrings__UserDb=${USER_DB_CONNECTION_STRING}
+          - Jwt__Secret=${JWT_SECRET}
+          - Jwt__Issuer=${JWT_ISSUER}
+          - Jwt__Audience=${JWT_AUDIENCE}
         volumes:
           - ./data:/data
         user: ${USER_ID}:${GROUP_ID}
         container_name: user-service
+
+networks:
+  habits-net:
+    external: true
+    name: habitstracker-net

@@ -1,58 +1,57 @@
-﻿module UserService.Host.DataAccess.Users
+[<RequireQualifiedAccessAttribute>]
+module UserService.Host.DataAccess.Users
 
 open System.Data
+open System.Threading.Tasks
 
-open Dapper
-open Dapper.FSharp.SQLite
+open Dapper.FSharp.PostgreSQL
+
+open HabitsTracker.Helpers
 
 type User =
-    { Id: int64; Email: string; Name: string }
+    { Id: int
+      Email: string
+      Name: string
+      PasswordHash: string }
 
-type InsertDto = { Email: string; Name: string }
+type InsertDto =
+    { Email: string
+      Name: string
+      PasswordHash: string }
 
 let users = table'<User> "Users"
 
-let getAllAsync (conn: IDbConnection) =
+let getByIdsAsync (ids: int Set) (conn: IDbConnection) : Task<User list> =
+    if ids.IsEmpty then
+        Task.FromResult List.empty
+    else
+        let usersList = ids |> Set.toList
+
+        select {
+            for u in users do
+                where (isIn u.Id usersList)
+                selectAll
+        }
+        |> conn.SelectAsync<User>
+        |> Task.map Seq.toList
+
+let getByEmailAsync (email: string) (conn: IDbConnection) : Task<User option> =
     select {
-        for h in users do
-            selectAll
+        for u in users do
+            where (u.Email = email)
     }
     |> conn.SelectAsync<User>
+    |> Task.map Seq.tryExactlyOne
 
-let getByIdsAsync (ids: int64 list) (conn: IDbConnection) =
-    select {
-        for h in users do
-            where (isIn h.Id ids)
-            selectAll
+let insertSingleAsync (insertDto: InsertDto) (conn: IDbConnection) : Task<User> =
+    insert {
+        into (table'<InsertDto> "Users")
+        value insertDto
     }
-    |> conn.SelectAsync<User>
+    |> conn.InsertOutputAsync<InsertDto, User>
+    |> Task.map Seq.exactlyOne
 
-let insertSingleAsync (insertDto: InsertDto) (conn: IDbConnection) =
-    task {
-        use tx = conn.BeginTransaction()
-
-        let! _ =
-            insert {
-                into (table'<InsertDto> "Users")
-                value insertDto
-            }
-            |> fun q -> conn.InsertAsync(q, tx)
-
-        let! id = conn.ExecuteScalarAsync<int>("SELECT last_insert_rowid()", transaction = tx)
-
-        tx.Commit()
-
-        return int64 id
-    }
-
-let deleteAllAsync (conn: IDbConnection) =
-    delete {
-        for _ in users do
-            deleteAll
-    }
-    |> conn.DeleteAsync
-
-let deleteByIdAsync (id: int64) (conn: IDbConnection) =
+let deleteByIdAsync (id: int) (conn: IDbConnection) =
     delete {
         for h in users do
             where (h.Id = id)

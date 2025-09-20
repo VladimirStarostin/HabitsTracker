@@ -6,13 +6,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="20250727001_CreateTablesMigration.fs" />
+    <Compile Include="20250727001_CreateUsersTableMigration.fs" />
+    <Compile Include="20250730001_CreateRefreshTokensTableMigration.fs" />
   </ItemGroup>
 	
   <ItemGroup>
     <PackageReference Include="FluentMigrator" Version="7.1.0" />
-    <PackageReference Include="FluentMigrator.Runner.SQLite" Version="7.1.0" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.7" />
+    <PackageReference Include="FluentMigrator.Runner.Postgres" Version="7.1.0" />
   </ItemGroup>
 
 </Project>

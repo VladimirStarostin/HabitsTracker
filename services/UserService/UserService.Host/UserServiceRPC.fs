@@ -1,53 +1,105 @@
-﻿namespace UserService.Host.Grpc
+namespace UserService.Host.Grpc
 
-open System
+open System.Threading.Tasks
 
 open Grpc.Core
 
 open HabitsTracker.Helpers
 open UserService.V1
 
-open UserService.Host.DataAccess.Users
+open UserService.Host.DataAccess
+open UserService.Host.Domain.Common.Types
+open UserService.Host.Domain.Operations
 
-type UserServiceImpl(connectionString: string) =
-    inherit UserService.UserServiceBase()
+type UserServiceImpl (connectionString: string, jwtSettings: JwtSettings, hasher: Security.IPasswordHasher) =
+    inherit UserService.UserServiceBase ()
 
-    override _.Register(request: RegisterRequest, _) : Threading.Tasks.Task<RegisterResponse> =
+    override _.Register (request: RegisterRequest, _) : Task<UserService.V1.AuthResponse> =
         task {
-            let! registeredUserId =
-                insertSingleAsync
+            match!
+                Registration.runPipelineAsync
                     { Email = request.Email
-                      Name = request.Name }
-                |> SQLite.executeWithConnection connectionString
-
-            return RegisterResponse(User = User(Id = registeredUserId, Email = request.Email, Name = request.Name))
+                      Name = request.Name
+                      Password = request.Password }
+                    jwtSettings
+                    hasher
+                |> Postgres.executeWithConnection connectionString
+            with
+            | Registration.PipelineResult.Ok authResponse ->
+                return
+                    UserService.V1.AuthResponse (
+                        AccessToken = authResponse.AccessToken,
+                        RefreshToken = authResponse.RefreshToken
+                    )
+            | Registration.PipelineResult.Error err -> return err.toRpcError () |> raise
         }
 
-    override _.GetCurrent(_, context: ServerCallContext) =
+    override _.Login (request: LoginRequest, _) : Task<UserService.V1.AuthResponse> =
         task {
-            let userId =
-                context.RequestHeaders
-                |> HeadersParser.getUserId
-                |> (int64 >> List.singleton)
-
-            let! currentUser =
-                getByIdsAsync userId
-                |> SQLite.executeWithConnection connectionString
-                |> fun t ->
-                    task {
-                        let! users = t
-                        return users |> Seq.exactlyOne
-                    }
-
-            return
-                GetCurrentResponse(User = User(Id = currentUser.Id, Email = currentUser.Email, Name = currentUser.Name))
+            match!
+                Login.runPipelineAsync
+                    { Email = request.Email
+                      Password = request.Password }
+                    jwtSettings
+                    hasher
+                |> Postgres.executeWithConnection connectionString
+            with
+            | Login.PipelineResult.Ok authResponse ->
+                return
+                    UserService.V1.AuthResponse (
+                        AccessToken = authResponse.AccessToken,
+                        RefreshToken = authResponse.RefreshToken
+                    )
+            | Login.PipelineResult.Error err -> return err.toRpcError () |> raise
         }
 
-    override _.DeleteAccount(_, context: ServerCallContext) =
+    override _.GetByIds (request: GetByIdsRequest, _) : Task<GetByIdsResponse> =
         task {
-            let userId = context.RequestHeaders |> HeadersParser.getUserId
+            let! users =
+                Users.getByIdsAsync (request.UserIds |> Set.ofSeq)
+                |> Postgres.executeWithConnection connectionString
 
-            let! _ = deleteByIdAsync userId |> SQLite.executeWithConnection connectionString
+            let response = GetByIdsResponse ()
 
-            return DeleteAccountResponse()
+            users
+            |> Seq.iter (fun u -> response.Users.Add (User (Email = u.Email, Name = u.Name, Id = u.Id)))
+
+            return response
+        }
+
+    override _.DeleteAccount (_, context: ServerCallContext) : Task<DeleteAccountResponse> =
+        task {
+            let userId = context.RequestHeaders |> Grpc.getUserId
+
+            let! numRowsDeleted =
+                Users.deleteByIdAsync userId
+                |> Postgres.executeWithConnection connectionString
+
+            return DeleteAccountResponse (DeletedRowsCount = numRowsDeleted)
+        }
+
+    override _.DeleteRefreshTokens (_, context) : Task<DeleteRefreshTokensResponse> =
+        task {
+            let userId = context.RequestHeaders |> Grpc.getUserId
+
+            let! deleted =
+                RefreshTokens.deleteByUserIdAsync userId
+                |> Postgres.executeWithConnection connectionString
+
+            return DeleteRefreshTokensResponse (DeletedRowsCount = deleted)
+        }
+
+    override _.Refresh (request, _callContext) : Task<UserService.V1.AuthResponse> =
+        task {
+            match!
+                Authentication.runPipelineAsync request.RefreshToken jwtSettings
+                |> Postgres.executeWithConnection connectionString
+            with
+            | Authentication.PipelineResult.Ok authResponse ->
+                return
+                    UserService.V1.AuthResponse (
+                        AccessToken = authResponse.AccessToken,
+                        RefreshToken = authResponse.RefreshToken
+                    )
+            | Authentication.PipelineResult.Error err -> return err.toRpcError () |> raise
         }

@@ -6,7 +6,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Users.fs" />
+    <Compile Include="DataAccess\Utils.fs" />
+    <Compile Include="DataAccess\Common.fs" />
+    <Compile Include="DataAccess\Users.fs" />
+    <Compile Include="DataAccess\RefreshTokens.fs" />
+    <Compile Include="Domain\Authentification.fs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -20,6 +24,10 @@
   <ItemGroup>
 	<ProjectReference Include="..\..\..\Helpers\Helpers.fsproj" />
 	<ProjectReference Include="..\UserService.Host\UserService.Host.fsproj" />
+  </ItemGroup>
+	
+  <ItemGroup>
+    <InternalsVisibleTo Include="HabitsTracker.Gateway.Tests" />
   </ItemGroup>
 	
 </Project>

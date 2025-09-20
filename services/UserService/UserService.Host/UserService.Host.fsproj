@@ -5,15 +5,26 @@
 	<IsPackable>false</IsPackable>
   </PropertyGroup>
 
+  <PropertyGroup>
+  	<UserSecretsId>habits-tracker-dev</UserSecretsId>
+  </PropertyGroup>
+	
   <ItemGroup>
+    <Compile Include="DataAccess\RefreshTokens.fs" />
     <Compile Include="DataAccess\Users.fs" />
+    <Compile Include="Domain\Common.fs" />
+    <Compile Include="Domain\Operations\Login.fs" />
+    <Compile Include="Domain\Operations\Registration.fs" />
+    <Compile Include="Domain\Operations\Authentification.fs" />
     <Compile Include="UserServiceRPC.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
     <PackageReference Include="Dapper.FSharp" Version="4.9.0" />
     <PackageReference Include="Grpc.AspNetCore.Server" Version="2.71.0" />
+	<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.13.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -23,7 +34,7 @@
   </ItemGroup>
 	
   <ItemGroup>
-    <InternalsVisibleTo Include="$(AssemblyName).Tests" />
+    <InternalsVisibleTo Include="UserService.Tests" />
   </ItemGroup>
 
 </Project>
