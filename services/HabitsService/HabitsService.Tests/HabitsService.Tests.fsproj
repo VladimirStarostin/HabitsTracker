@@ -7,6 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Utils.fs" />
+    <Compile Include="Common.fs" />
     <Compile Include="Habits.fs" />
   </ItemGroup>
 
@@ -22,6 +24,10 @@
 	<ProjectReference Include="..\..\..\Helpers\Helpers.fsproj" />
 	<ProjectReference Include="..\HabitsService.Host\HabitsService.Host.fsproj" />
 	<ProjectReference Include="..\HabitsService.Migrations\HabitsService.Migrations.fsproj" />
+  </ItemGroup>
+	
+  <ItemGroup>
+    <InternalsVisibleTo Include="HabitsTracker.Gateway.Tests" />
   </ItemGroup>
 
 </Project>

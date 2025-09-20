@@ -1,131 +1,249 @@
 module HabitsService.Tests.DataAccess.Habits
 
-open Microsoft.Data.Sqlite
+open Npgsql
 
+open Dapper.FSharp.PostgreSQL
 open NUnit.Framework
-
-open Dapper.FSharp.SQLite
 
 open HabitsTracker.Helpers
 
 open HabitsService.Host.DataAccess.Habits
+open HabitsService.Tests.DataAccess.Utils.Common
+open HabitsService.Tests.DataAccess.Utils.Habits
 open HabitsService.Migrations
 
-let connectionString = "Data Source=file:memdb1?mode=memory&cache=shared"
+let internal connectionStringForTests =
+    "Host=localhost;Port=5432;Database=habits_db;Username=habits_tracker_user;Password=1W@nt70m3J0b"
 
 [<OneTimeSetUp>]
 let Setup () =
     do OptionTypes.register ()
-    do MigrationRunner.runMigrations connectionString (typeof<CreateTablesMigration>.Assembly)
+    do MigrationRunner.runMigrations connectionStringForTests (typeof<CreateTablesMigration>.Assembly)
 
 [<SetUp>]
-let clearDbAsync () =
-    task {
-        use conn = new SqliteConnection(connectionString)
-        let! _ = deleteAllAsync conn
-        return ()
-    }
+let clearDbAsync () = clearDbAsync ()
 
 [<Test>]
 let ``Select from empty Habits returns empty`` () =
     task {
-        use conn = new SqliteConnection(connectionString)
-        do conn.Open()
+        use conn = new NpgsqlConnection (connectionStringForTests)
+        do conn.Open ()
         let! result = getAllAsync conn
-        Assert.That(result, Is.Empty)
+        Assert.That (result, Is.Empty)
+    }
+
+[<Test>]
+let ``getByUserIdsAsync - ids selectivity`` () =
+    task {
+        use conn = new NpgsqlConnection (connectionStringForTests)
+        do conn.Open ()
+
+        let! habit1 =
+            insertSingleAsync
+                { Name = "Read books"
+                  Description = None
+                  OwnerUserId = 1 }
+                conn
+
+        let! habit2 =
+            insertSingleAsync
+                { Name = "Exercise"
+                  Description = None
+                  OwnerUserId = 2 }
+                conn
+
+        let! habit3 =
+            insertSingleAsync
+                { Name = "Run"
+                  Description = None
+                  OwnerUserId = 3 }
+                conn
+
+        let expectedInTable: Record list =
+            [ habit1; habit2; habit3 ]
+            |> List.map mapToUtilsRecord
+
+        let! actualInTable = getAllAsync conn
+        Assert.That (actualInTable, Is.EquivalentTo expectedInTable)
+
+        let expected: Habit list = [ habit2; habit3 ]
+
+        let! actual =
+            getByUserIdsAsync
+                (Set
+                    [ habit2.OwnerUserId
+                      habit3.OwnerUserId ])
+                conn
+
+        Assert.That (actual, Is.EquivalentTo expected)
     }
 
 [<Test>]
 let ``getByIdsAsync - ids selectivity`` () =
     task {
-        use conn = new SqliteConnection(connectionString)
-        do conn.Open()
-        let! id1 = insertSingleAsync { Name = "Read books" } conn
-        let! id2 = insertSingleAsync { Name = "Exercise" } conn
-        let! id3 = insertSingleAsync { Name = "Run" } conn
+        use conn = new NpgsqlConnection (connectionStringForTests)
+        do conn.Open ()
 
-        let expectedInTable =
-            [ { Id = id1; Name = "Read books" }
-              { Id = id2; Name = "Exercise" }
-              { Id = id3; Name = "Run" } ]
+        let! habit1 =
+            insertSingleAsync
+                { Name = "Read books"
+                  Description = None
+                  OwnerUserId = 1 }
+                conn
+
+        let! habit2 =
+            insertSingleAsync
+                { Name = "Exercise"
+                  Description = None
+                  OwnerUserId = 1 }
+                conn
+
+        let! habit3 =
+            insertSingleAsync
+                { Name = "Run"
+                  Description = None
+                  OwnerUserId = 1 }
+                conn
+
+        let expectedInTable: Record list =
+            [ habit1; habit2; habit3 ]
+            |> List.map mapToUtilsRecord
 
         let! actualInTable = getAllAsync conn
-        Assert.That(actualInTable, Is.EquivalentTo expectedInTable)
+        Assert.That (actualInTable, Is.EquivalentTo expectedInTable)
 
-        let expected = [ { Id = id2; Name = "Exercise" }; { Id = id3; Name = "Run" } ]
-        let! actual = getByIdsAsync [ id2; id3 ] conn
-        Assert.That(actual, Is.EquivalentTo expected)
+        let expected: Habit list = [ habit2; habit3 ]
+
+        let! actual = getByIdsAsync (Set [ habit2.Id; habit3.Id ]) conn
+        Assert.That (actual, Is.EquivalentTo expected)
     }
 
 [<Test>]
 let ``getByIdsAsync - empty ids - no rows returned`` () =
     task {
-        use conn = new SqliteConnection(connectionString)
-        do conn.Open()
-        let! id1 = insertSingleAsync { Name = "Read books" } conn
-        let! id2 = insertSingleAsync { Name = "Exercise" } conn
-        let! id3 = insertSingleAsync { Name = "Run" } conn
+        use conn = new NpgsqlConnection (connectionStringForTests)
+        do conn.Open ()
 
-        let expectedInTable =
-            [ { Id = id1; Name = "Read books" }
-              { Id = id2; Name = "Exercise" }
-              { Id = id3; Name = "Run" } ]
+        let! habit1 =
+            insertSingleAsync
+                { Name = "Read books"
+                  Description = None
+                  OwnerUserId = 1 }
+                conn
+
+        let! habit2 =
+            insertSingleAsync
+                { Name = "Exercise"
+                  Description = None
+                  OwnerUserId = 1 }
+                conn
+
+        let! habit3 =
+            insertSingleAsync
+                { Name = "Run"
+                  Description = None
+                  OwnerUserId = 1 }
+                conn
+
+        let expectedInTable: Record list =
+            [ habit1; habit2; habit3 ]
+            |> List.map mapToUtilsRecord
 
         let! actualInTable = getAllAsync conn
-        Assert.That(actualInTable, Is.EquivalentTo expectedInTable)
+        Assert.That (actualInTable, Is.EquivalentTo expectedInTable)
 
-        let! actual = getByIdsAsync [] conn
-        Assert.That(actual, Is.Empty)
+        let! actual = getByIdsAsync Set.empty conn
+        Assert.That (actual, Is.Empty)
     }
 
 [<Test>]
 let ``getByIdsAsync - unexistent id - no rows returned`` () =
     task {
-        use conn = new SqliteConnection(connectionString)
-        do conn.Open()
-        let! id1 = insertSingleAsync { Name = "Read books" } conn
-        let! id2 = insertSingleAsync { Name = "Exercise" } conn
-        let! id3 = insertSingleAsync { Name = "Run" } conn
+        use conn = new NpgsqlConnection (connectionStringForTests)
+        do conn.Open ()
 
-        let expectedInTable =
-            [ { Id = id1; Name = "Read books" }
-              { Id = id2; Name = "Exercise" }
-              { Id = id3; Name = "Run" } ]
+        let! habit1 =
+            insertSingleAsync
+                { Name = "Read books"
+                  Description = None
+                  OwnerUserId = 1 }
+                conn
+
+        let! habit2 =
+            insertSingleAsync
+                { Name = "Exercise"
+                  Description = None
+                  OwnerUserId = 1 }
+                conn
+
+        let! habit3 =
+            insertSingleAsync
+                { Name = "Run"
+                  Description = None
+                  OwnerUserId = 1 }
+                conn
+
+        let expectedInTable: Record list =
+            [ habit1; habit2; habit3 ]
+            |> List.map mapToUtilsRecord
 
         let! actualInTable = getAllAsync conn
-        Assert.That(actualInTable, Is.EquivalentTo expectedInTable)
+        Assert.That (actualInTable, Is.EquivalentTo expectedInTable)
 
-        let! actual = getByIdsAsync (List.singleton 0) conn
-        Assert.That(actual, Is.Empty)
+        let! actual = getByIdsAsync (Set.singleton 0) conn
+        Assert.That (actual, Is.Empty)
     }
 
 [<Test>]
-let ``getAllAsync - insert two then select all`` () =
+let ``deleteByIdsAsync - id and user selectivity`` () =
     task {
-        use conn = new SqliteConnection(connectionString)
-        do conn.Open()
-        let! id1 = insertSingleAsync { Name = "Read books" } conn
-        let! id2 = insertSingleAsync { Name = "Exercise" } conn
+        use conn = new NpgsqlConnection (connectionStringForTests)
+        do conn.Open ()
 
-        let expected =
-            [ { Id = id1; Name = "Read books" }; { Id = id2; Name = "Exercise" } ]
+        let! habit1 =
+            insertSingleAsync
+                { Name = "Read books"
+                  Description = None
+                  OwnerUserId = 1 }
+                conn
+
+        let! habit2 =
+            insertSingleAsync
+                { Name = "Exercise"
+                  Description = None
+                  OwnerUserId = 1 }
+                conn
+
+        let expectedInTable: Record list = [ habit1; habit2 ] |> List.map mapToUtilsRecord
+
+        let! actualInTable = getAllAsync conn
+        Assert.That (actualInTable, Is.EquivalentTo expectedInTable)
+
+        let! numRowsAffected = deleteByIdsAsync (Set.singleton habit1.Id) habit1.OwnerUserId conn
+        Assert.That (numRowsAffected, Is.EqualTo 1)
+
+        let expected = habit2 |> mapToUtilsRecord |> List.singleton
 
         let! actual = getAllAsync conn
-        Assert.That(actual, Is.EquivalentTo expected)
+        Assert.That (actual, Is.EquivalentTo expected)
     }
 
 [<Test>]
-let ``deleteByIdAsync - id selectivity`` () =
+let ``deleteByIdsAsync - wrong user does not delete`` () =
     task {
-        use conn = new SqliteConnection(connectionString)
-        do conn.Open()
-        let! id1 = insertSingleAsync { Name = "Read books" } conn
-        let! id2 = insertSingleAsync { Name = "Exercise" } conn
+        use conn = new NpgsqlConnection (connectionStringForTests)
+        do conn.Open ()
 
-        let! numRowsAffected = deleteByIdAsync id1 conn
-        Assert.That(numRowsAffected, Is.EqualTo 1)
+        let! habit =
+            insertSingleAsync
+                { Name = "Read books"
+                  Description = None
+                  OwnerUserId = 1 }
+                conn
 
-        let expected = List.singleton { Id = id2; Name = "Exercise" }
+        let! numRowsAffected = deleteByIdsAsync (Set.singleton habit.Id) 999 conn
+        Assert.That (numRowsAffected, Is.EqualTo 0)
+
         let! actual = getAllAsync conn
-        Assert.That(actual, Is.EquivalentTo expected)
+        Assert.That (actual.Length, Is.EqualTo 1)
     }

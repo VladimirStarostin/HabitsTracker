@@ -1,57 +1,79 @@
-﻿namespace HabitsService.Host.Grpc
+namespace HabitsService.Host.Grpc
+
+open System
+
+open Grpc.Core
 
 open HabitsService.V1
 open HabitsTracker.Helpers
 
 open HabitsService.Host.DataAccess.Habits
 
-type HabitsServiceImpl(connectionString: string) =
-    inherit HabitsService.HabitsServiceBase()
+type HabitsServiceImpl (connectionString: string) =
+    inherit HabitsService.HabitsServiceBase ()
 
-    override _.GetAll(_, _) =
-        task {
-            let! habits = getAllAsync |> SQLite.executeWithConnection connectionString
-            let response = GetAllResponse()
-
-            for h in habits do
-                response.Habits.Add(Habit(Id = h.Id, Name = h.Name))
-
-            return response
-        }
-
-    override _.GetByIds(request: GetByIdsRequest, _) =
+    override _.GetByIds (request: GetByIdsRequest, _) =
         task {
             let! habits =
-                getByIdsAsync (request.HabitIds |> Seq.toList)
-                |> SQLite.executeWithConnection connectionString
+                getByIdsAsync (request.HabitIds |> Set.ofSeq)
+                |> Postgres.executeWithConnection connectionString
 
-            let response = GetByIdsResponse()
+            let response = GetByIdsResponse ()
 
             for h in habits do
-                response.Habits.Add(Habit(Id = h.Id, Name = h.Name))
+                response.Habits.Add (Habit (Id = h.Id, Name = h.Name))
 
             return response
         }
 
-    override _.Add(request: AddHabitRequest, _) =
+    override _.GetByUserIds (request: GetByUserIdsRequest, _) =
         task {
-            let! id =
-                insertSingleAsync { Name = request.Name }
-                |> SQLite.executeWithConnection connectionString
+            let! habits =
+                getByUserIdsAsync (request.UserIds |> Set.ofSeq)
+                |> Postgres.executeWithConnection connectionString
 
-            let! result =
-                getByIdsAsync (List.singleton id)
-                |> SQLite.executeWithConnection connectionString
+            let response = GetByUserIdsResponse ()
 
-            let habit = result |> Seq.exactlyOne
-            return AddHabitResponse(Habit = Habit(Id = habit.Id, Name = habit.Name))
+            for h in habits do
+                response.Habits.Add (Habit (Id = h.Id, Name = h.Name))
+
+            return response
         }
 
-    override _.Delete(request: DeleteHabitRequest, _) =
+    override _.Create (request: CreateHabitRequest, _) =
         task {
-            let! _ =
-                deleteByIdAsync request.Id
-                |> SQLite.executeWithConnection connectionString
+            let! habit =
+                insertSingleAsync
+                    { OwnerUserId = request.OwnerUserId
+                      Name = request.Name
+                      Description =
+                        if System.String.IsNullOrWhiteSpace request.Description then
+                            None
+                        else
+                            Some request.Description }
+                |> Postgres.executeWithConnection connectionString
 
-            return DeleteHabitResponse()
+            let description =
+                habit.Description
+                |> Option.defaultValue String.Empty
+
+            return
+                CreateHabitResponse (
+                    Habit =
+                        HabitsService.V1.Habit (
+                            Id = habit.Id,
+                            Name = habit.Name,
+                            Description = description,
+                            OwnerUserId = habit.OwnerUserId
+                        )
+                )
+        }
+
+    override _.Delete (request: DeleteHabitRequest, context: ServerCallContext) =
+        task {
+            let! deletedRowsCount =
+                deleteByIdsAsync (request.HabitIds |> Set.ofSeq) (Grpc.getUserId context.RequestHeaders)
+                |> Postgres.executeWithConnection connectionString
+
+            return DeleteHabitResponse (DeletedRowsCount = deletedRowsCount)
         }
