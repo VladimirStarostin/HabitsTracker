@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -8,15 +8,26 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Tests.fs" />
+    <Compile Include="Domain\HabitsService.fs" />
+    <Compile Include="Domain\UsersService.fs" />
+    <Compile Include="UseCases\General.fs" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+	<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.19" />
     <PackageReference Include="NUnit" Version="3.14.0" />
     <PackageReference Include="NUnit.Analyzers" Version="3.9.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\services\HabitsService\HabitsService.Tests\HabitsService.Tests.fsproj" />
+    <ProjectReference Include="..\..\services\TrackingService\TrackingService.Tests\TrackingService.Tests.fsproj" />
+    <ProjectReference Include="..\..\services\UserService\UserService.Tests\UserService.Tests.fsproj" />
+    <ProjectReference Include="..\HabitsTracker.Gateway.Api\HabitsTracker.Gateway.Api.fsproj" />
+    <ProjectReference Include="..\HabitsTracker.Gateway.Host\HabitsTracker.Gateway.Host.fsproj" />
   </ItemGroup>
 
 </Project>

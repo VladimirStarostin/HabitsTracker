@@ -4,14 +4,39 @@
     <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Include="Program.fs" />
-  </ItemGroup>
+  <PropertyGroup>
+  	<UserSecretsId>habits-tracker-dev</UserSecretsId>
+  </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\services\HabitsService\HabitsService.Protos\HabitsService.Protos.csproj" />
     <ProjectReference Include="..\..\services\TrackingService\TrackingService.Protos\TrackingService.Protos.csproj" />
     <ProjectReference Include="..\..\services\UserService\UserService.Protos\UserService.Protos.csproj" />
+    <ProjectReference Include="..\..\Helpers\Helpers.fsproj" />
+    <ProjectReference Include="..\HabitsTracker.Gateway.Api\HabitsTracker.Gateway.Api.fsproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Clients\**" />
+    <Compile Include="DomainServices\HabitsService.fs" />
+    <Compile Include="DomainServices\TrackingService.fs" />
+    <Compile Include="DomainServices\UsersService.fs" />
+    <Compile Include="Giraffe\**" />
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Giraffe" Version="7.0.2" />
+    <PackageReference Include="Grpc.Net.ClientFactory" Version="2.71.0" />
+	<PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.18" />
+    <PackageReference Include="Swashbuckle.AspNetCore.Swagger" Version="9.0.3" />
+    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="9.0.3" />
+    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="9.0.3" />
+  </ItemGroup>
+	
+  <ItemGroup>
+    <InternalsVisibleTo Include="HabitsTracker.Gateway.Tests" />
   </ItemGroup>
 
 </Project>
