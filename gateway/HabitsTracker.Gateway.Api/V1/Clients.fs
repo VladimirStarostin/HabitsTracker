@@ -85,11 +85,7 @@ module Auth =
 module Habits =
     module Api = HabitsTracker.Gateway.Api.V1.Habits
 
-    let createHabit
-        (client: HttpClient)
-        (token: string)
-        (input: Api.CreateHabitParameters)
-        : ApiResponse<Api.Habit> =
+    let createHabit (client: HttpClient) (token: string) (input: Api.CreateHabitParameters) : ApiResponse<Api.Habit> =
         client.DefaultRequestHeaders.Authorization <- AuthenticationHeaderValue ("Bearer", token)
 
         client.PostAsJsonAsync ("api/v1/habits", input)
@@ -116,11 +112,7 @@ module Habits =
 module Events =
     module Api = HabitsTracker.Gateway.Api.V1.Events
 
-    let getEventsByHabitId
-        (client: HttpClient)
-        (token: string)
-        (habitId: int)
-        : ApiResponse<Api.HabitEventInfo list> =
+    let getEventsByHabitId (client: HttpClient) (token: string) (habitId: int) : ApiResponse<Api.HabitEventInfo list> =
         client.DefaultRequestHeaders.Authorization <- AuthenticationHeaderValue ("Bearer", token)
 
         client.GetAsync $"api/v1/events/by-habit/{habitId}"
