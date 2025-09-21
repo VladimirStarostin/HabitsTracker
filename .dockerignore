@@ -1,0 +1,13 @@
+**/bin
+**/obj
+
+.vs
+.idea
+.vscode
+*.user
+*.suo
+
+Thumbs.db
+
+*.nupkg
+*.snupkg
