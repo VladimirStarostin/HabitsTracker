@@ -105,35 +105,36 @@ let configureServices (builder: WebApplicationBuilder) : WebApplicationBuilder =
                     IssuerSigningKey = SymmetricSecurityKey (keyBytes)
                 )
 
-            opts.Events <-
-                JwtBearerEvents (
+            let events = JwtBearerEvents ()
 
-                    OnAuthenticationFailed =
-                        Func<AuthenticationFailedContext, Task> (fun ctx ->
-                            let log = ctx.HttpContext.RequestServices.GetRequiredService<ILogger<Program>> ()
-                            log.LogError (ctx.Exception, "JWT auth failed")
-                            Task.CompletedTask
-                        ),
-
-                    OnChallenge =
-                        Func<JwtBearerChallengeContext, Task> (fun ctx ->
-                            let log = ctx.HttpContext.RequestServices.GetRequiredService<ILogger<Program>> ()
-                            log.LogWarning ("JWT challenge: {Error} {Desc}", ctx.Error, ctx.ErrorDescription)
-                            Task.CompletedTask
-                        ),
-
-                    OnMessageReceived =
-                        Func<MessageReceivedContext, Task> (fun ctx ->
-                            let log = ctx.HttpContext.RequestServices.GetRequiredService<ILogger<Program>> ()
-
-                            log.LogInformation (
-                                "Authorization header present: {HasAuth}",
-                                ctx.Request.Headers.ContainsKey "Authorization"
-                            )
-
-                            Task.CompletedTask
-                        )
+            events.OnAuthenticationFailed <-
+                Func<AuthenticationFailedContext, Task> (fun ctx ->
+                    let log = ctx.HttpContext.RequestServices.GetRequiredService<ILogger<Program>> ()
+                    log.LogError (ctx.Exception, "JWT auth failed")
+                    Task.CompletedTask
                 )
+
+            if builder.Environment.IsDevelopment () then
+                events.OnChallenge <-
+                    Func<JwtBearerChallengeContext, Task> (fun ctx ->
+                        let log = ctx.HttpContext.RequestServices.GetRequiredService<ILogger<Program>> ()
+                        log.LogWarning ("JWT challenge: {Error} {Desc}", ctx.Error, ctx.ErrorDescription)
+                        Task.CompletedTask
+                    )
+
+                events.OnMessageReceived <-
+                    Func<MessageReceivedContext, Task> (fun ctx ->
+                        let log = ctx.HttpContext.RequestServices.GetRequiredService<ILogger<Program>> ()
+
+                        log.LogInformation (
+                            "Authorization header present: {HasAuth}",
+                            ctx.Request.Headers.ContainsKey "Authorization"
+                        )
+
+                        Task.CompletedTask
+                    )
+
+            opts.Events <- events
         )
         .Services.AddAuthorization ()
     |> ignore
