@@ -24,6 +24,7 @@
     <PackageReference Include="Google.Protobuf" Version="3.31.1" />
     <PackageReference Include="Grpc.Core" Version="2.46.6" />
     <PackageReference Include="Npgsql" Version="8.0.7" />
+    <PackageReference Include="Testcontainers.PostgreSql" Version="4.7.0" />
   </ItemGroup>
 
 </Project>
