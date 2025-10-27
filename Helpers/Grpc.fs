@@ -2,7 +2,6 @@
 module HabitsTracker.Helpers.Grpc
 
 open System
-open Microsoft.AspNetCore.Http
 
 open Google.Protobuf.WellKnownTypes
 open Grpc.Core

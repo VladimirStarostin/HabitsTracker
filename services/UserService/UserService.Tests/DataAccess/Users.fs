@@ -11,21 +11,21 @@ open HabitsTracker.Helpers
 open UserService.Host.DataAccess
 open UserService.Migrations
 
-open UserService.Tests.DataAccess.Utils
+open UserService.Tests.DataAccess.Utils.Common
 open UserService.Tests.DataAccess.Utils.Users
 
 [<OneTimeSetUp>]
 let Setup () =
     do OptionTypes.register ()
-    do MigrationRunner.runMigrations Common.connectionStringForTests (typeof<CreateTablesMigration>.Assembly)
+    do MigrationRunner.runMigrations connectionStringForTests (typeof<CreateTablesMigration>.Assembly)
 
 [<SetUp>]
-let prepareDbAsync () = Common.clearDbAsync ()
+let prepareDbAsync () = clearDbAsync connectionStringForTests
 
 [<Test>]
 let ``Select from empty Habits returns empty`` () =
     task {
-        use conn = new NpgsqlConnection (Common.connectionStringForTests)
+        use conn = new NpgsqlConnection (connectionStringForTests)
         do conn.Open ()
         let! result = getAllAsync conn
         Assert.That (result, Is.Empty)
@@ -36,7 +36,7 @@ let date = DateTimeOffset.Parse "2025-07-28"
 [<Test>]
 let ``getByIdsAsync - ids selectivity`` () =
     task {
-        use conn = new NpgsqlConnection (Common.connectionStringForTests)
+        use conn = new NpgsqlConnection (connectionStringForTests)
         do conn.Open ()
 
         let! user1 =
@@ -76,7 +76,7 @@ let ``getByIdsAsync - ids selectivity`` () =
 [<Test>]
 let ``getByIdsAsync - empty ids - no rows returned`` () =
     task {
-        use conn = new NpgsqlConnection (Common.connectionStringForTests)
+        use conn = new NpgsqlConnection (connectionStringForTests)
         do conn.Open ()
 
         let! user1 =
@@ -114,7 +114,7 @@ let ``getByIdsAsync - empty ids - no rows returned`` () =
 [<Test>]
 let ``getByIdsAsync - unexistent id - no rows returned`` () =
     task {
-        use conn = new NpgsqlConnection (Common.connectionStringForTests)
+        use conn = new NpgsqlConnection (connectionStringForTests)
         do conn.Open ()
 
         let! user1 =
@@ -152,7 +152,7 @@ let ``getByIdsAsync - unexistent id - no rows returned`` () =
 [<Test>]
 let ``deleteByIdAsync - id selectivity`` () =
     task {
-        use conn = new NpgsqlConnection (Common.connectionStringForTests)
+        use conn = new NpgsqlConnection (connectionStringForTests)
         do conn.Open ()
 
         let! user1 =
@@ -184,7 +184,7 @@ let ``deleteByIdAsync - id selectivity`` () =
 [<Test>]
 let ``getByEmailAsync - emails selectivity`` () =
     task {
-        use conn = new NpgsqlConnection (Common.connectionStringForTests)
+        use conn = new NpgsqlConnection (connectionStringForTests)
         do conn.Open ()
 
         let! user1 =

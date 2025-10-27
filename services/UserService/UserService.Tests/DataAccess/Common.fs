@@ -4,6 +4,8 @@ open System
 open System.Data
 open System.Threading.Tasks
 
+open HabitsTracker.Helpers
+
 module RefreshTokens = UserService.Host.DataAccess.RefreshTokens
 module Users = UserService.Host.DataAccess.Users
 
@@ -21,7 +23,7 @@ let defaultRecord: RefreshTokens.InsertDto =
 let internal connectionStringForTests =
     "Host=localhost;Port=5432;Database=users_db;Username=habits_tracker_user;Password=1W@nt70m3J0b"
 
-let clearDbAsync () =
+let clearDbAsync (connectionString: string) =
     task {
         do!
             (fun conn ->
@@ -31,7 +33,7 @@ let clearDbAsync () =
                     return ()
                 }
             )
-            |> HabitsTracker.Helpers.Postgres.executeWithConnection connectionStringForTests
+            |> Postgres.executeWithConnection connectionString
     }
     :> Task
 

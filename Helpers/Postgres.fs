@@ -22,22 +22,12 @@ open Testcontainers.PostgreSql
 
 let private quoteIdent (s: string) = "\"" + s.Replace ("\"", "\"\"") + "\""
 
-type TestPostgresDbContainerHandle =
-    { ConnectionString: string
-      Container: IAsyncDisposable option }
+type ContainerHandle =
+    { RootConnectionString: string
+      Port: int
+      Container: IAsyncDisposable }
 
-    interface IAsyncDisposable with
-        member this.DisposeAsync () =
-            match this.Container with
-            | Some c -> c.DisposeAsync ()
-            | None -> ValueTask.CompletedTask
-
-let tryCreatePostgresDbAsync
-    (port: int)
-    (dbName: string)
-    (userName: string)
-    (password: string)
-    : Task<TestPostgresDbContainerHandle> =
+let tryCreatePostgresDbContainerAsync (port: int) : Task<ContainerHandle> =
     task {
         let adminUser =
             match Environment.GetEnvironmentVariable ("PG_ADMIN_USER") with
@@ -54,32 +44,31 @@ let tryCreatePostgresDbAsync
         let rootConnStr =
             $"Host=127.0.0.1;Port={port};Username={adminUser};Password={adminPassword};Database=postgres"
 
-        let! alreadyRunning =
-            task {
-                try
-                    use c = new NpgsqlConnection (rootConnStr)
-                    do! c.OpenAsync ()
-                    return true
-                with _ ->
-                    return false
-            }
+        let pg =
+            PostgreSqlBuilder()
+                .WithImage("postgres:16-alpine")
+                .WithDatabase("postgres")
+                .WithUsername(adminUser)
+                .WithPassword(adminPassword)
+                .WithPortBinding(port, 5432)
+                .Build ()
 
-        let mutable container: PostgreSqlContainer option = None
+        do! pg.StartAsync ()
 
-        if not alreadyRunning then
-            let pg =
-                PostgreSqlBuilder()
-                    .WithImage("postgres:16-alpine")
-                    .WithDatabase("postgres")
-                    .WithUsername(adminUser)
-                    .WithPassword(adminPassword)
-                    .WithPortBinding(port, 5432)
-                    .Build ()
+        return
+            { Container = pg
+              RootConnectionString = rootConnStr
+              Port = port }
+    }
 
-            do! pg.StartAsync ()
-            container <- Some pg
-
-        use adminConn = new NpgsqlConnection (rootConnStr)
+let tryCreateDbAsync
+    (dbName: string)
+    (userName: string)
+    (password: string)
+    (conainerHandle: ContainerHandle)
+    : Task<string> =
+    task {
+        use adminConn = new NpgsqlConnection (conainerHandle.RootConnectionString)
         do! adminConn.OpenAsync ()
 
         do!
@@ -97,6 +86,8 @@ let tryCreatePostgresDbAsync
                     ignore (createDb.ExecuteNonQuery ())
             }
 
+        let correctPassword = password.Replace ("'", "''")
+
         do!
             task {
                 use check =
@@ -109,28 +100,21 @@ let tryCreatePostgresDbAsync
 
                 if isNull ok then
                     use createRole =
-                        new NpgsqlCommand ($"create user {quoteIdent userName} with password @pwd", adminConn)
+                        new NpgsqlCommand (
+                            $"create user {quoteIdent userName} with password '{correctPassword}'",
+                            adminConn
+                        )
 
-                    createRole.Parameters.AddWithValue ("pwd", password)
-                    |> ignore
-
-                    ignore (createRole.ExecuteNonQuery ())
+                    createRole.ExecuteNonQuery () |> ignore
                 else
                     use alterPwd =
-                        new NpgsqlCommand ($"alter user {quoteIdent userName} with password @pwd", adminConn)
+                        new NpgsqlCommand (
+                            $"alter user {quoteIdent userName} with password '{correctPassword}'",
+                            adminConn
+                        )
 
-                    alterPwd.Parameters.AddWithValue ("pwd", password)
-                    |> ignore
-
-                    ignore (alterPwd.ExecuteNonQuery ())
+                    alterPwd.ExecuteNonQuery () |> ignore
             }
 
-        let connStr =
-            $"Host=127.0.0.1;Port={port};Username={userName};Password={password};Database={dbName}"
-
-        return
-            { ConnectionString = connStr
-              Container =
-                container
-                |> Option.map (fun c -> c :> IAsyncDisposable) }
+        return $"Host=127.0.0.1;Port={conainerHandle.Port};Username={userName};Password={password};Database={dbName}"
     }

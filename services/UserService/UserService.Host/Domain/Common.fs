@@ -154,7 +154,7 @@ module Operations =
                 claims = claims,
                 notBefore = Nullable now,
                 expires = Nullable expires,
-                signingCredentials = creds
+                signingCredentials = creds 
             )
 
         Ok

@@ -3,7 +3,6 @@ module TrackingService.Tests.DataAccess.HabitEvents
 open System
 
 open Npgsql
-
 open NUnit.Framework
 
 open HabitsTracker.Helpers
@@ -19,7 +18,7 @@ let Setup () =
     do MigrationRunner.runMigrations connectionStringForTests (typeof<CreateHabitEventsTableMigration>.Assembly)
 
 [<SetUp>]
-let setup () = clearDbAsync ()
+let setup () = clearDbAsync connectionStringForTests
 
 let date = (DateTimeOffset.Parse "2025-07-28").ToUniversalTime ()
 
