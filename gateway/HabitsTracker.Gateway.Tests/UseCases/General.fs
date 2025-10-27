@@ -1,14 +1,16 @@
-module General.UseCases
+module HabitsTracker.Gateway.Tests.General.E2eUseCases
 
 open System
+open System.IO
+
 open Microsoft.AspNetCore.Mvc.Testing
+open Microsoft.Extensions.Hosting
+
 open NUnit.Framework
 
 open HabitsTracker.Gateway.Api.V1
 open HabitsTracker.Gateway.Clients
 open HabitsTracker.Helpers
-open System.Threading.Tasks
-open HabitsTracker.Gateway.Api
 
 module HabitsCommon = HabitsService.Tests.DataAccess.Utils.Common
 module TrackingCommon = TrackingService.Tests.DataAccess.Utils.Common
@@ -19,20 +21,62 @@ module RefreshTokensUtils = UserService.Tests.DataAccess.Utils.RefreshTokens
 module TrackingUtils = TrackingService.Tests.DataAccess.Utils.HabitEventsUtils
 module UsersUtils = UserService.Tests.DataAccess.Utils.Users
 
+type TestAppFactory() =
+    inherit WebApplicationFactory<HabitsTracker.Gateway.Host.Infrastructure.Clients.IAuthClient>()
+
+    override _.CreateHost(builder: IHostBuilder) =
+        let envFile = Path.Combine(AppContext.BaseDirectory, ".env.tests")
+
+        if File.Exists(envFile) then
+            File.ReadAllLines(envFile)
+            |> Array.iter (fun line ->
+                if not (line.StartsWith("#") || String.IsNullOrWhiteSpace line) then
+                    let parts = line.Split('=', 2)
+                    if parts.Length = 2 then
+                        Environment.SetEnvironmentVariable(parts[0].Trim(), parts[1].Trim()))
+
+        base.CreateHost(builder)
+
+let factory = new TestAppFactory()
+let client = factory.CreateClient()
+
+[<OneTimeTearDown>]
+let tearDown () =
+    do client.Dispose()
+    do factory.Dispose()
+
 let defaultRegisterParameters: Auth.RegisterParameters =
     { Email = "test@email.com"
       Password = "p@$$w0rd"
       Name = "Bob" }
 
-let factory = new WebApplicationFactory<Program.Program> ()
-let client = factory.CreateClient ()
-
 [<SetUp>]
 let Setup () =
     task {
-        do! UsersCommon.clearDbAsync ()
-        do! HabitsCommon.clearDbAsync ()
-        do! TrackingCommon.clearDbAsync ()
+        do!
+            //"USER_DB_CONNECTION_STRING"
+            //|> System.Environment.GetEnvironmentVariable
+            //|> Option.ofObj
+            //|> Option.defaultValue
+            UsersCommon.connectionStringForTests
+            |> UsersCommon.clearDbAsync
+
+        do!
+            //"HABITS_DB_CONNECTION_STRING"
+            //|> System.Environment.GetEnvironmentVariable
+            //|> Option.ofObj
+            //|> Option.defaultValue
+            HabitsCommon.connectionStringForTests
+            |> HabitsCommon.clearDbAsync
+
+        do!
+            //"TRACKING_DB_CONNECTION_STRING"
+            //|> System.Environment.GetEnvironmentVariable
+            //|> Option.ofObj
+            //|> Option.defaultValue
+            TrackingCommon.connectionStringForTests
+            |> TrackingCommon.clearDbAsync
+
         do Dapper.addRequiredTypeHandlers ()
         return ()
     }
@@ -141,7 +185,7 @@ let ``General use case, ends with habit deletion - habits and events are erased`
         Assert.That (habitsActual, Is.Empty)
         Assert.That (eventsActual, Is.Empty)
 
-        let! refreshTokenAfterRegistration =
+        let! refreshTokenAfterRegistration, accessToken =
             task {
                 match! Auth.register client defaultRegisterParameters with
                 | Ok resp ->
@@ -174,7 +218,7 @@ let ``General use case, ends with habit deletion - habits and events are erased`
                     Assert.That (habitsActual, Is.Empty)
                     Assert.That (eventsActual, Is.Empty)
 
-                    return resp.RefreshToken
+                    return resp.RefreshToken, resp.AccessToken
 
                 | _ -> return failwith "Registering failed"
             }
@@ -183,7 +227,7 @@ let ``General use case, ends with habit deletion - habits and events are erased`
         let userId = rawUsers |> List.exactlyOne |> (fun e -> e.Id)
 
         // 2.
-        let! refreshTokens, accessToken =
+        let! refreshTokens, newAccessToken =
             task {
                 match!
                     Auth.login
@@ -215,7 +259,7 @@ let ``General use case, ends with habit deletion - habits and events are erased`
                     Assert.That (eventsActual, Is.Empty)
 
                     return refreshTokensActual, resp.AccessToken
-                | _ -> return failwith "Login failed unexpectedly"
+                | err -> return failwith $"Login failed unexpectedly: {err.ToString()}"
             }
 
         // 3. Creating a new habit
@@ -226,7 +270,7 @@ let ``General use case, ends with habit deletion - habits and events are erased`
                       Description = "Some descriptive description" }
                     : Habits.CreateHabitParameters
 
-                match! Habits.createHabit client accessToken newHabit with
+                match! Habits.createHabit client newAccessToken newHabit with
                 | Ok resp ->
                     let expectedHabits: HabitsTestDto list =
                         List.singleton
@@ -242,13 +286,13 @@ let ``General use case, ends with habit deletion - habits and events are erased`
                     Assert.That (eventsActual, Is.Empty)
 
                     return resp.Id, expectedHabits
-                | _ -> return failwith "Habit creating failed unexpectedly"
+                | Error err -> return failwith $"Habit creating failed unexpectedly: {err}"
             }
 
         // 4.1
         let! event1 =
             task {
-                match! Events.createEvent client accessToken { Events.HabitId = habitId } with
+                match! Events.createEvent client newAccessToken { Events.HabitId = habitId } with
                 | Ok newEvent ->
                     Assert.That (newEvent.HabitId, Is.EqualTo habitId)
                     let! refreshTokensActual, usersActual, habitsActual, eventsActual = getDbStatesAsync ()
@@ -270,7 +314,7 @@ let ``General use case, ends with habit deletion - habits and events are erased`
         // 4.2
         let! event2 =
             task {
-                match! Events.createEvent client accessToken { Events.HabitId = habitId } with
+                match! Events.createEvent client newAccessToken { Events.HabitId = habitId } with
                 | Ok newEvent ->
                     Assert.That (newEvent.HabitId, Is.EqualTo habitId)
                     let! refreshTokensActual, usersActual, habitsActual, eventsActual = getDbStatesAsync ()
@@ -294,7 +338,7 @@ let ``General use case, ends with habit deletion - habits and events are erased`
         // 5.1
         do!
             task {
-                match! Events.deleteEvent client accessToken event1.Id with
+                match! Events.deleteEvent client newAccessToken event1.Id with
                 | Ok rowsDeleted ->
                     Assert.That (rowsDeleted, Is.EqualTo 1)
                     let! refreshTokensActual, usersActual, habitsActual, eventsActual = getDbStatesAsync ()
@@ -315,7 +359,7 @@ let ``General use case, ends with habit deletion - habits and events are erased`
         // 6.
         do!
             task {
-                match! Habits.deleteHabitById client accessToken habitId with
+                match! Habits.deleteHabitById client newAccessToken habitId with
                 | Ok rowsDeleted ->
                     Assert.That (rowsDeleted, Is.EqualTo 1)
                     let! refreshTokensActual, usersActual, habitsActual, eventsActual = getDbStatesAsync ()

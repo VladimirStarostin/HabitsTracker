@@ -1,5 +1,3 @@
-type Program = class end
-
 open System
 open System.Text
 open System.Threading.Tasks
@@ -7,7 +5,6 @@ open System.Threading.Tasks
 open Microsoft.AspNetCore.Authentication.JwtBearer
 open Microsoft.AspNetCore.Builder
 open Microsoft.Extensions.DependencyInjection
-open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
 open Microsoft.IdentityModel.Logging
@@ -79,9 +76,6 @@ let configureServices (builder: WebApplicationBuilder) : WebApplicationBuilder =
     if builder.Environment.IsDevelopment () then
         IdentityModelEventSource.ShowPII <- true
 
-        builder.Configuration.AddUserSecrets<Program> ()
-        |> ignore
-
     let jwtKey = config.["Jwt:Secret"].TrimEnd ()
     let jwtIssuer = config.["Jwt:Issuer"].TrimEnd ()
     let jwtAudience = config.["Jwt:Audience"].TrimEnd ()
@@ -109,7 +103,7 @@ let configureServices (builder: WebApplicationBuilder) : WebApplicationBuilder =
 
             events.OnAuthenticationFailed <-
                 Func<AuthenticationFailedContext, Task> (fun ctx ->
-                    let log = ctx.HttpContext.RequestServices.GetRequiredService<ILogger<Program>> ()
+                    let log = ctx.HttpContext.RequestServices.GetRequiredService<ILogger<AuthenticationFailedContext>> ()
                     log.LogError (ctx.Exception, "JWT auth failed")
                     Task.CompletedTask
                 )
@@ -117,14 +111,14 @@ let configureServices (builder: WebApplicationBuilder) : WebApplicationBuilder =
             if builder.Environment.IsDevelopment () then
                 events.OnChallenge <-
                     Func<JwtBearerChallengeContext, Task> (fun ctx ->
-                        let log = ctx.HttpContext.RequestServices.GetRequiredService<ILogger<Program>> ()
+                        let log = ctx.HttpContext.RequestServices.GetRequiredService<ILogger<JwtBearerChallengeContext>> ()
                         log.LogWarning ("JWT challenge: {Error} {Desc}", ctx.Error, ctx.ErrorDescription)
                         Task.CompletedTask
                     )
 
                 events.OnMessageReceived <-
                     Func<MessageReceivedContext, Task> (fun ctx ->
-                        let log = ctx.HttpContext.RequestServices.GetRequiredService<ILogger<Program>> ()
+                        let log = ctx.HttpContext.RequestServices.GetRequiredService<ILogger<MessageReceivedContext>> ()
 
                         log.LogInformation (
                             "Authorization header present: {HasAuth}",

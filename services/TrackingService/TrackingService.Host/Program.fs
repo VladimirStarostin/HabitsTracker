@@ -12,7 +12,8 @@ let main args =
     do Dapper.addRequiredTypeHandlers ()
     let builder = WebApplication.CreateBuilder (args)
 
-    let connectionString = builder.Configuration.GetConnectionString ("TrackingDb")
+    let connectionString =
+        builder.Configuration.GetConnectionString ("Main")
 
     do
         builder.Services
@@ -20,9 +21,10 @@ let main args =
             .Services.AddScoped<TrackingServiceImpl> (fun _ -> new TrackingServiceImpl (connectionString))
         |> ignore
 
+    do Logging.addLogging builder "TrackingService.Host"
     let app = builder.Build ()
-    do StatusEndpoint.add app |> ignore
 
+    do StatusEndpoint.add app |> ignore
     do
         app.MapGrpcService<TrackingServiceImpl> ()
         |> ignore

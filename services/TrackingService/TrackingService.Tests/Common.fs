@@ -11,7 +11,7 @@ let defaultDate = DateTime.Parse "2025-07-28"
 let internal connectionStringForTests =
     "Host=localhost;Port=5432;Database=tracking_db;Username=habits_tracker_user;Password=1W@nt70m3J0b"
 
-let clearDbAsync () =
+let clearDbAsync (connectionString: string) =
     task {
         do!
             (fun conn ->
@@ -20,6 +20,6 @@ let clearDbAsync () =
                     return ()
                 }
             )
-            |> HabitsTracker.Helpers.Postgres.executeWithConnection connectionStringForTests
+            |> HabitsTracker.Helpers.Postgres.executeWithConnection connectionString
     }
     :> Task

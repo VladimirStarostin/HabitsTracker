@@ -1,0 +1,92 @@
+services:
+  db:
+    image: postgres:16
+    restart: always
+    networks: [habits-net]
+    env_file: .env.tests
+    environment:
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+    ports:
+      - "${PG_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./pg_db/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  habits-service:
+    build:
+      context: ..
+      dockerfile: ./services/HabitsService/HabitsService.Host/Dockerfile
+    ports:
+      - "5000:5000"
+      - "5001:5001"
+    restart: always
+    networks: [habits-net]
+    env_file: .env.tests
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Main: ${HABITS_DB_CONNECTION_STRING}
+    volumes:
+      - ./data:/data
+    user: ${USER_ID}:${GROUP_ID}
+    container_name: habits-service
+    depends_on:
+      db:
+        condition: service_healthy
+
+  habits-tracking-service:
+    build:
+      context: ..
+      dockerfile: ./services/TrackingService/TrackingService.Host/Dockerfile
+    ports:
+      - "5005:5005"
+      - "5006:5006"
+    restart: always
+    networks: [habits-net]
+    env_file: .env.tests
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Main: ${TRACKING_DB_CONNECTION_STRING}
+    volumes:
+      - ./data:/data
+    user: ${USER_ID}:${GROUP_ID}
+    container_name: habits-tracking-service
+    depends_on:
+      db:
+        condition: service_healthy
+
+  user-service:
+    build:
+      context: ..
+      dockerfile: ./services/UserService/UserService.Host/Dockerfile
+    networks: [habits-net]
+    ports:
+      - "5010:5010"
+      - "5011:5011"
+    restart: always
+    env_file: .env.tests
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Main: ${USER_DB_CONNECTION_STRING}
+      Jwt__Secret: ${JWT__SECRET}
+      Jwt__Issuer: ${JWT__ISSUER}
+      Jwt__Audience: ${JWT__AUDIENCE}
+    volumes:
+      - ./data:/data
+    user: ${USER_ID}:${GROUP_ID}
+    container_name: user-service
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+
+networks:
+  habits-net:
+    name: habitstracker-net

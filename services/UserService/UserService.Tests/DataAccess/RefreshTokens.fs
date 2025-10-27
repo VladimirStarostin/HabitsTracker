@@ -20,7 +20,8 @@ let Setup () =
     do MigrationRunner.runMigrations Common.connectionStringForTests (typeof<CreateTablesMigration>.Assembly)
 
 [<SetUp>]
-let prepareDbAsync () = Common.clearDbAsync ()
+let prepareDbAsync () =
+    Common.clearDbAsync Common.connectionStringForTests
 
 [<Test>]
 let ``RefreshTokenUtils.getAllAsync - select from empty RefreshTokens returns empty`` () =

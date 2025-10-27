@@ -1,4 +1,4 @@
-﻿[<RequireQualifiedAccessAttribute>]
+[<RequireQualifiedAccessAttribute>]
 module HabitsTracker.Helpers.StatusEndpoint
 
 open System
@@ -7,9 +7,12 @@ open System.Reflection
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Routing
 
+[<Literal>]
+let defaultRoute = "/api/status"
+
 let add (builder: IEndpointRouteBuilder) =
     builder.MapGet (
-        "api/status",
+        defaultRoute,
         Func<_> (fun _ ->
             let assemblyName = Assembly.GetEntryAssembly().GetName ()
 

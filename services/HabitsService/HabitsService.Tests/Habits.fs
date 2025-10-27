@@ -12,16 +12,13 @@ open HabitsService.Tests.DataAccess.Utils.Common
 open HabitsService.Tests.DataAccess.Utils.Habits
 open HabitsService.Migrations
 
-let internal connectionStringForTests =
-    "Host=localhost;Port=5432;Database=habits_db;Username=habits_tracker_user;Password=1W@nt70m3J0b"
-
 [<OneTimeSetUp>]
 let Setup () =
     do OptionTypes.register ()
     do MigrationRunner.runMigrations connectionStringForTests (typeof<CreateTablesMigration>.Assembly)
 
 [<SetUp>]
-let clearDbAsync () = clearDbAsync ()
+let clearDbAsync () = clearDbAsync connectionStringForTests
 
 [<Test>]
 let ``Select from empty Habits returns empty`` () =

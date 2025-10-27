@@ -1,7 +1,3 @@
-type UserHostProgram = class end
-
-open System.Text
-
 open Microsoft.AspNetCore.Builder
 open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.DependencyInjection
@@ -12,7 +8,6 @@ open HabitsTracker.Helpers
 
 open UserService.Host.Domain.Common.Types
 open UserService.Host.Grpc
-open System.Security.Cryptography
 
 type JwtOptions =
     { Secret: string
@@ -26,20 +21,18 @@ let main args =
     do Dapper.addRequiredTypeHandlers ()
 
     let builder = WebApplication.CreateBuilder (args)
+    let config = builder.Configuration
 
-    let connectionString = builder.Configuration.GetConnectionString ("UserDb")
+    let connectionString = config.GetConnectionString ("Main")
 
     builder.Logging.AddConsole().SetMinimumLevel (LogLevel.Warning)
     |> ignore
 
-    let config = builder.Configuration
-
-    if builder.Environment.IsDevelopment () then
-        builder.Configuration.AddUserSecrets<UserHostProgram> ()
+    do
+        (150_000, 16, 32)
+        |> Security.Pbkdf2PasswordHasher
+        |> builder.Services.AddSingleton<Security.IPasswordHasher>
         |> ignore
-
-    builder.Services.AddSingleton<Security.IPasswordHasher> (Security.Pbkdf2PasswordHasher (150_000, 16, 32))
-    |> ignore
 
     let jwtKey = config.["Jwt:Secret"].TrimEnd ()
     let jwtIssuer = config.["Jwt:Issuer"].TrimEnd ()
@@ -62,6 +55,8 @@ let main args =
                 )
             )
         |> ignore
+
+    do Logging.addLogging builder "UserService.Host"
 
     let app = builder.Build ()
     do StatusEndpoint.add app |> ignore
